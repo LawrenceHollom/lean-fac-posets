@@ -12,7 +12,8 @@ def IsScattered (α : Type*) [PartialOrder α] : Prop := ¬ Nonempty (ℚ ↪o �
 
 /-- Scatteredness is inherited by induced subposets. -/
 theorem IsScattered.subtype (h : IsScattered α) (S : Set α) : IsScattered S := by
-  sorry
+  rintro ⟨e⟩
+  exact h ⟨e.trans (OrderEmbedding.subtype S)⟩
 
 /-- Paper fact `fact:covers`. -/
 theorem IsScattered.exists_covBy_between (h : IsScattered α) {x y : α} (hxy : x < y) :

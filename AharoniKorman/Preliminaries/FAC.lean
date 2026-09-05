@@ -19,7 +19,13 @@ theorem IsFAC.antichain_finite (h : IsFAC α) {A : Set α}
 
 /-- FAC is inherited by induced subposets. -/
 theorem IsFAC.subtype (h : IsFAC α) (S : Set α) : IsFAC S := by
-  sorry
+  intro A hA
+  apply Set.Finite.of_finite_image (f := Subtype.val) (h (Subtype.val '' A) ?_)
+  · exact Subtype.val_injective.injOn
+  · rintro _ ⟨x, hx, rfl⟩ _ ⟨y, hy, rfl⟩ hxy hle
+    apply hA hx hy
+    · exact fun h => hxy (congrArg Subtype.val h)
+    · exact hle
 
 /-- FAC is invariant under order duality. -/
 theorem isFAC_orderDual_iff : IsFAC αᵒᵈ ↔ IsFAC α := by
