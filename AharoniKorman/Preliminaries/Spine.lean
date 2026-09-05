@@ -19,6 +19,12 @@ structure SpineData (P C : Set α) where
   blocks_disjoint : ∀ x y, x ≠ y → Disjoint (block x) (block y)
   iUnion_blocks : (⋃ x, block x) = P
 
+theorem SpineData.block_subset {P C : Set α} (S : SpineData P C) (x : C) :
+    S.block x ⊆ P := by
+  intro z hz
+  rw [← S.iUnion_blocks]
+  exact Set.mem_iUnion_of_mem x hz
+
 /-- `P` has a spine contained in `P`. -/
 def HasSpineOn (P : Set α) : Prop := ∃ C : Set α, Nonempty (SpineData P C)
 

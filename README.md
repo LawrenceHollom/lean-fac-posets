@@ -14,9 +14,9 @@ The formalisation is divided into the same three milestones as the project:
 See [ROADMAP.md](ROADMAP.md) for the module map, dependency graph, theorem correspondence, and
 risk assessment.
 
-The project currently contains the shared definitions and theorem interfaces. Proofs marked
-with `sorry` are deliberate milestone boundaries, not claims that those results have already
-been verified.
+Stage 1 is implemented and checked by Lean, relative to Zaguia's published tube theorem, which is
+kept as an explicit external assumption in `External/Zaguia.lean`. Later-stage interfaces still
+contain `sorry` at their planned milestone boundaries.
 
 Build with:
 

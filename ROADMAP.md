@@ -49,8 +49,11 @@ Tube + Structural + Final/TubeFromChain
   coinitiality, and duality lemmas.
 - `Preliminaries/Intervals.lean`: nonempty convex intervals, convex hulls, and endpoint-free
   intervals used by replacement witnesses.
+- `Preliminaries/Choice.lean`: a countable system-of-distinct-representatives lemma for families
+  of infinite sets, used to assign outside points to fresh spine blocks.
 - `Preliminaries/FAC.lean`: FAC, inheritance by induced subposets/order duals, and the infinite
-  chain/Ramsey lemma (`fact:infinite-chain`).
+  chain/Ramsey lemma (`fact:infinite-chain`), including the strictly monotone subsequence lemma
+  used in Stage 1.
 - `Preliminaries/Scattered.lean`: scattered posets as those admitting no order embedding of
   `ℚ`, inheritance, and the cover lemma (`fact:covers`).
 - `Preliminaries/Vacillating.lean`: omega-sums of infinite co-wellfounded blocks and vacillation,
@@ -76,8 +79,11 @@ Tube + Structural + Final/TubeFromChain
 - `Tube/MaximalImpliesSpine.lean`: `maximalTube_hasSpine`
   (`prop:maximal-tube-suffices`), combining Zaguia's theorem with partition extension.
 
-This stage is largely elementary.  Its only substantial library work is a clean countable
-enumeration/recursive-choice lemma.  It should be the first fully sorry-free milestone.
+This stage is complete relative to the explicitly isolated theorem of Zaguia.  The reduction
+itself is sorry-free: it includes the maximal-tube characterization, the infinite compatible-block
+lemma, the countable fresh-block assignment, and the stronger conclusion that the resulting spine
+chain remains inside the maximal tube.  `External/Zaguia.lean` is the sole non-local mathematical
+input to the final Stage 1 theorem.
 
 ### Stage 2: reduction to scattered posets (paper Section 5)
 
@@ -162,7 +168,7 @@ edge cases explicit before long proofs are attempted.
 
 ## Suggested execution order
 
-1. Finish all preliminaries needed by `Tube/*`, then make Stage 1 sorry-free.
+1. Stage 1: complete relative to `External/Zaguia.lean`.
 2. Finish `EtaChains`, formalize eta replacement, and complete Stage 2.
 3. Freeze the public API of `Completion/*` after proving its order and completeness theorems.
 4. Implement the illfounded and alternating replacement frameworks.

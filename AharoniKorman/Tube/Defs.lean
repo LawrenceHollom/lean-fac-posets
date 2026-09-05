@@ -34,9 +34,35 @@ theorem IsChain.isTube {C : Set α} (hC : IsChain (· ≤ ·) C) : IsTube C := b
   rw [hEmpty]
   exact Set.finite_empty
 
+/-- A point can be adjoined to a tube when it has finite incomparability inside the tube. -/
+theorem IsTube.insert {T : Set α} (hT : IsTube T) {x : α}
+    (hx : (T ∩ incomparableSet x).Finite) : IsTube (insert x T) := by
+  intro y hy
+  rcases hy with rfl | hy
+  · apply hx.subset
+    rintro z ⟨hz, hinc⟩
+    refine ⟨?_, hinc⟩
+    rcases hz with rfl | hz
+    · exact False.elim (hinc.not_le le_rfl)
+    · exact hz
+  · apply ((hT y hy).insert x).subset
+    rintro z ⟨hz, hinc⟩
+    rcases hz with rfl | hz
+    · exact Set.mem_insert _ _
+    · exact Set.mem_insert_of_mem x ⟨hz, hinc⟩
+
 /-- The useful outside-point characterization of maximal tubes. -/
 theorem isMaximalTube_iff (T : Set α) :
     IsMaximalTube T ↔ IsTube T ∧ ∀ x ∉ T, (T ∩ incomparableSet x).Infinite := by
-  sorry
+  constructor
+  · rintro ⟨hT, hmax⟩
+    refine ⟨hT, fun x hx => ?_⟩
+    intro hfinite
+    exact hmax x hx (hT.insert hfinite)
+  · rintro ⟨hT, hout⟩
+    refine ⟨hT, fun x hx hinsert => ?_⟩
+    apply hout x hx
+    exact (hinsert x (Set.mem_insert x T)).subset fun z hz =>
+      ⟨Set.mem_insert_of_mem x hz.1, hz.2⟩
 
 end AharoniKorman
