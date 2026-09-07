@@ -29,12 +29,19 @@ theorem IsFAC.subtype (h : IsFAC α) (S : Set α) : IsFAC S := by
 
 /-- FAC is invariant under order duality. -/
 theorem isFAC_orderDual_iff : IsFAC αᵒᵈ ↔ IsFAC α := by
-  sorry
+  constructor
+  · intro h A hA
+    exact h A hA.swap
+  · intro h A hA
+    exact h A hA.swap
 
-/-- Paper fact `fact:infinite-chain`, isolated as the Ramsey-theoretic input. -/
-theorem IsFAC.exists_infinite_chain (hfac : IsFAC α) [Infinite α] :
-    ∃ C : Set α, IsChain (· ≤ ·) C ∧ C.Infinite := by
-  sorry
+/-- FAC transported to the order dual. -/
+theorem IsFAC.orderDual (h : IsFAC α) : IsFAC αᵒᵈ :=
+  isFAC_orderDual_iff.mpr h
+
+/-- FAC transported back from the order dual. -/
+theorem IsFAC.of_orderDual (h : IsFAC αᵒᵈ) : IsFAC α :=
+  isFAC_orderDual_iff.mp h
 
 /-- Every injective sequence in an FAC poset has a strictly monotone subsequence. -/
 theorem IsFAC.exists_strictMono_or_strictAnti_subsequence (hfac : IsFAC α)
@@ -66,5 +73,35 @@ theorem IsFAC.exists_strictMono_or_strictAnti_subsequence (hfac : IsFAC α)
       · have hlt : f (g (g' m)) < f (g (g' n)) := lt_of_le_of_ne hle hne
         exact hNotDecreasing _ _ hnm hlt
     exact hA_infinite (hfac A hA_antichain)
+
+/-- The range of a strictly monotone sequence is infinite. -/
+theorem infinite_range_of_strictMono {f : ℕ → α} (hf : StrictMono f) :
+    (Set.range f).Infinite :=
+  Set.infinite_range_of_injective hf.injective
+
+/-- The range of a strictly antitone sequence is infinite. -/
+theorem infinite_range_of_strictAnti {f : ℕ → α} (hf : StrictAnti f) :
+    (Set.range f).Infinite :=
+  Set.infinite_range_of_injective hf.injective
+
+/-- Subtype form of the monotone-subsequence lemma. -/
+theorem IsFAC.exists_strictMono_or_strictAnti_sequence_in (hfac : IsFAC α)
+    {S : Set α} (hS : S.Infinite) :
+    ∃ f : ℕ → S, StrictMono f ∨ StrictAnti f := by
+  let e : ℕ ↪ S := hS.natEmbedding S
+  obtain ⟨g, hg⟩ := (hfac.subtype S).exists_strictMono_or_strictAnti_subsequence e.injective
+  exact ⟨e ∘ g, hg⟩
+
+/-- Paper fact `fact:infinite-chain`, obtained from the two-colour infinite monotone-subsequence
+theorem `exists_increasing_or_nonincreasing_subseq`. -/
+theorem IsFAC.exists_infinite_chain (hfac : IsFAC α) [Infinite α] :
+    ∃ C : Set α, IsChain (· ≤ ·) C ∧ C.Infinite := by
+  let e := Infinite.natEmbedding α
+  obtain ⟨g, hmono | hanti⟩ :=
+    hfac.exists_strictMono_or_strictAnti_subsequence e.injective
+  · exact ⟨Set.range (e ∘ g), hmono.monotone.isChain_range,
+      infinite_range_of_strictMono hmono⟩
+  · exact ⟨Set.range (e ∘ g), hanti.antitone.isChain_range,
+      infinite_range_of_strictAnti hanti⟩
 
 end AharoniKorman

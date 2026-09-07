@@ -1,5 +1,6 @@
 import AharoniKorman.Structural.EtaChains
 import AharoniKorman.Preliminaries.FAC
+import AharoniKorman.Preliminaries.ReplacementOrder
 import Mathlib.Order.Zorn
 
 namespace AharoniKorman
@@ -399,56 +400,6 @@ theorem EtaChainObject.exists_mem_not_mem_of_lt [Countable α]
     f.image_eq_singleton_of_mem_target x (h x.1 x.2)
   have hcarriers : C.carrier = D.carrier := f.eq_of_trivial htrivial
   exact hCD.ne (SetLike.coe_injective hcarriers)
-
-/-- The running maximum of an enumeration.  It is useful below because the enumeration lies in a
-chain, although the ambient replacement order is only partial. -/
-def etaRunningMax {β : Type*} [PartialOrder β] [DecidableLE β] (f : ℕ → β) : ℕ → β :=
-  fun n => Nat.rec (f 0)
-    (fun k previous => if previous ≤ f (k + 1) then f (k + 1) else previous) n
-
-@[simp] theorem etaRunningMax_zero {β : Type*} [PartialOrder β] [DecidableLE β] (f : ℕ → β) :
-    etaRunningMax f 0 = f 0 := by
-  simp [etaRunningMax]
-
-@[simp] theorem etaRunningMax_succ {β : Type*} [PartialOrder β] [DecidableLE β]
-    (f : ℕ → β) (n : ℕ) :
-    etaRunningMax f (n + 1) =
-      if etaRunningMax f n ≤ f (n + 1) then f (n + 1) else etaRunningMax f n := by
-  rfl
-
-theorem etaRunningMax_mem {β : Type*} [PartialOrder β] [DecidableLE β] {s : Set β}
-    (hs : IsChain (· ≤ ·) s) {f : ℕ → β} (hf : ∀ n, f n ∈ s) :
-    ∀ n, etaRunningMax f n ∈ s := by
-  intro n
-  induction n with
-  | zero => simpa using hf 0
-  | succ n ih =>
-      rw [etaRunningMax_succ]
-      split
-      · exact hf (n + 1)
-      · exact ih
-
-theorem etaRunningMax_le_succ {β : Type*} [PartialOrder β] [DecidableLE β] {s : Set β}
-    (hs : IsChain (· ≤ ·) s) {f : ℕ → β} (hf : ∀ n, f n ∈ s) (n : ℕ) :
-    etaRunningMax f n ≤ etaRunningMax f (n + 1) := by
-  rw [etaRunningMax_succ]
-  split_ifs with h
-  · exact h
-  · exact le_rfl
-
-theorem etaRunningMax_self_le {β : Type*} [PartialOrder β] [DecidableLE β] {s : Set β}
-    (hs : IsChain (· ≤ ·) s) {f : ℕ → β} (hf : ∀ n, f n ∈ s) :
-    ∀ n, f n ≤ etaRunningMax f n := by
-  intro n
-  cases n with
-  | zero => exact le_rfl
-  | succ n =>
-      rw [etaRunningMax_succ]
-      split_ifs with h
-      · exact le_rfl
-      · rcases hs.total (etaRunningMax_mem hs hf n) (hf (n + 1)) with h' | h'
-        · exact False.elim (h h')
-        · exact h'
 
 /-- Composite of a finite consecutive sequence of replacement witnesses. -/
 def iterEtaReplacement [Countable α] (C : ℕ → EtaChainObject α)
@@ -898,10 +849,10 @@ theorem etaReplacement_chain_upperBound [Countable α] (hfac : IsFAC α)
   obtain ⟨enum, henum⟩ := exists_surjective_nat I
   let f : ℕ → EtaChainObject α := fun n => B (enum n)
   have hfmem (n : ℕ) : f n ∈ s := hBs (enum n)
-  let R : ℕ → EtaChainObject α := etaRunningMax f
-  have hRmem (n : ℕ) : R n ∈ s := etaRunningMax_mem hs hfmem n
+  let R : ℕ → EtaChainObject α := runningMax f
+  have hRmem (n : ℕ) : R n ∈ s := runningMax_mem hs hfmem n
   have hRmono : Monotone R := monotone_nat_of_le_succ fun n =>
-    etaRunningMax_le_succ hs hfmem n
+    runningMax_le_succ hs hfmem n
   have hstep (n : ℕ) : EtaReplacement (R n).carrier (R (n + 1)).carrier :=
     Classical.choice (hRmono (Nat.le_succ n))
   obtain ⟨upper, hupper⟩ := etaReplacement_sequence_upperBound hfac R hstep
@@ -909,7 +860,7 @@ theorem etaReplacement_chain_upperBound [Countable α] (hfac : IsFAC α)
   obtain ⟨i, hCi⟩ := hcofinal C hCs
   obtain ⟨n, hn⟩ := henum i
   have henumLe : B i ≤ R n := by
-    simpa [R, f, hn] using etaRunningMax_self_le hs hfmem n
+    simpa [R, f, hn] using runningMax_self_le hs hfmem n
   exact hCi.trans (henumLe.trans (hupper n))
 
 theorem exists_etaStronglyMaximal [Countable α] (hfac : IsFAC α)

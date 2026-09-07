@@ -9,8 +9,10 @@ open AharoniKorman
 
 variable {α : Type*} [PartialOrder α]
 
-/-- Zaguia, Theorem 6, rephrased: every tube has a spine in its induced order. -/
-theorem tube_hasSpine (T : Set α) (hT : IsTube T) : HasSpineOn T := by
-  sorry
+/-- **External input (Zaguia, Theorem 6).** Every tube has a spine in its induced order.
+
+This is the sole Zaguia result used by the formalisation and is intentionally exposed as an exact
+axiom rather than hidden behind a `sorry`. -/
+axiom tube_hasSpine (T : Set α) (hT : IsTube T) : HasSpineOn T
 
 end AharoniKorman.External
