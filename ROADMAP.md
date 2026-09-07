@@ -98,9 +98,18 @@ input to the final Stage 1 theorem.
 - `Structural/Reduction.lean`: union of maximal tubes in the scattered pieces and
   `maximalTube_reduction_to_scattered` (`cor:scattered-reduction`).
 
-The delicate point is the Zorn step.  It should be expressed once as an abstract lemma saying
-that countable cofinal replacement chains suffice; ordinal/cofinality bookkeeping should not be
-repeated in each later replacement construction.
+Stage 2 is implemented and checked, with no `sorry` declarations in `Structural/*`.  In particular,
+`etaReplacement_chain_upperBound` is proved in two layers.  For a sequence, the FAC hypothesis makes
+the strict-descendant relation well founded; terminal descendants form an eta chain in the stable
+limit, and their convex hulls in an eta-maximal extension give the required interval fibres.  For an
+arbitrary chain, every strict replacement permanently removes an ambient point.  Countability of
+the poset therefore yields a countable cofinal family; its running maxima reduce the problem to the
+sequential theorem.
+
+This order of construction repairs a circularity in the manuscript: it does not choose an
+eta-maximal extension of `liminf C_n` until terminal descendants have proved that the stable limit
+already contains an eta chain.  Taking induced convex hulls in the final chain also supplies the
+interval condition omitted from the informal leaf-fibre construction.
 
 ### Stage 3 foundation: the chain extension H(P) (paper Section 3)
 
@@ -169,7 +178,7 @@ edge cases explicit before long proofs are attempted.
 ## Suggested execution order
 
 1. Stage 1: complete relative to `External/Zaguia.lean`.
-2. Finish `EtaChains`, formalize eta replacement, and complete Stage 2.
+2. Stage 2: complete, including Theorem 1.4 and the scattered-poset reduction.
 3. Freeze the public API of `Completion/*` after proving its order and completeness theorems.
 4. Implement the illfounded and alternating replacement frameworks.
 5. Implement consolidation, construct the maximal tube, and close the final two-line theorem.

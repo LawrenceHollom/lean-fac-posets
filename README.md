@@ -14,9 +14,11 @@ The formalisation is divided into the same three milestones as the project:
 See [ROADMAP.md](ROADMAP.md) for the module map, dependency graph, theorem correspondence, and
 risk assessment.
 
-Stage 1 is implemented and checked by Lean, relative to Zaguia's published tube theorem, which is
-kept as an explicit external assumption in `External/Zaguia.lean`. Later-stage interfaces still
-contain `sorry` at their planned milestone boundaries.
+Stages 1 and 2 are implemented and checked by Lean.  Stage 1 is relative to Zaguia's published
+tube theorem, kept as an explicit external assumption in `External/Zaguia.lean`.  Stage 2 includes
+the eta-replacement upper-bound theorem, the structural decomposition (Theorem 1.4), and the
+reduction to scattered posets; it has no remaining `sorry` declarations.  See `ROADMAP.md` for the
+proof architecture and the remaining Stage 3 work.
 
 Build with:
 

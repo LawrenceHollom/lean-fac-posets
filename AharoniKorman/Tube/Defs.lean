@@ -65,4 +65,16 @@ theorem isMaximalTube_iff (T : Set α) :
     exact (hinsert x (Set.mem_insert x T)).subset fun z hz =>
       ⟨Set.mem_insert_of_mem x hz.1, hz.2⟩
 
+theorem IsMaximalTube.nonempty [Nonempty α] {T : Set α} (hT : IsMaximalTube T) :
+    T.Nonempty := by
+  obtain ⟨x⟩ := ‹Nonempty α›
+  by_contra hne
+  have hx : x ∉ T := fun hx => hne ⟨x, hx⟩
+  have hinfinite := (isMaximalTube_iff T).mp hT |>.2 x hx
+  apply hinfinite
+  have hempty : T ∩ incomparableSet x = ∅ := Set.not_nonempty_iff_eq_empty.mp
+    (fun ⟨y, hy⟩ => hne ⟨y, hy.1⟩)
+  rw [hempty]
+  exact Set.finite_empty
+
 end AharoniKorman
