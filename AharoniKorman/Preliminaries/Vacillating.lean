@@ -50,15 +50,17 @@ theorem IsVacillating.ordConnected_subtype (h : IsVacillating α) {S : Set α}
   have hC'chain : IsChain (· ≤ ·) C' := by
     rintro _ ⟨x, hx, rfl⟩ _ ⟨y, hy, rfl⟩ hxy
     exact hC.1 hx hy (fun h => hxy (congrArg Subtype.val h))
-  have hC'convex : C'.OrdConnected := by
-    refine ⟨fun x hx y hy z hz => ?_⟩
+  have hC'saturated : IsSaturatedChain C' := by
+    refine ⟨hC'chain, ?_⟩
+    intro x y z hx hy hxz hzy hcomp
     obtain ⟨x', hxC, rfl⟩ := hx
     obtain ⟨y', hyC, rfl⟩ := hy
-    have hzS : z ∈ S := hS.out x'.2 y'.2 hz
+    have hzS : z ∈ S := hS.out x'.2 y'.2 ⟨hxz, hzy⟩
     let z' : S := ⟨z, hzS⟩
-    have hzC : z' ∈ C := hC.2.out hxC hyC hz
+    have hzC : z' ∈ C := hC.2 hxC hyC hxz hzy
+      (fun c hc => hcomp c.1 ⟨c, hc, rfl⟩)
     exact ⟨z', hzC, rfl⟩
-  have hambient := h C' ⟨hC'chain, hC'convex⟩
+  have hambient := h C' hC'saturated
   constructor
   · intro hbad
     exact hambient.1 (omegaSum_subtype_image hbad)

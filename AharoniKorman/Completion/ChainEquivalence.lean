@@ -234,27 +234,22 @@ theorem MutuallyFiniteIncomparability.symm {C D : SaturatedChain α}
   left_finite := h.right_finite
   right_finite := h.left_finite
 
-private theorem convexHull_saturatedChain_self (C : SaturatedChain α) :
-    convexHull (C : Set α) = C := by
-  apply Set.Subset.antisymm
-  · rintro x ⟨a, ha, b, hb, hax, hxb⟩
-    exact C.ordConnected.out ha hb ⟨hax, hxb⟩
-  · intro x hx
-    exact ⟨x, hx, x, hx, le_rfl, le_rfl⟩
+/-- Saturation means maximality in the chain's own convex hull. -/
+theorem SaturatedChain.maximalIn_convexHull (C : SaturatedChain α) :
+    IsMaximalChainIn C (convexHull (C : Set α)) := by
+  refine ⟨fun x hx => ⟨x, hx, x, hx, le_rfl, le_rfl⟩, C.isChain, ?_⟩
+  intro D hD hsub hCD
+  apply Set.Subset.antisymm hCD
+  intro x hx
+  obtain ⟨a, ha, b, hb, hax, hxb⟩ := hsub hx
+  exact C.mem_of_between ha hb hax hxb (fun c hc => hD.total hx (hCD hc))
 
 /-- A saturated chain has mutually finite incomparability with itself. -/
 theorem MutuallyFiniteIncomparability.refl (C : SaturatedChain α) :
     MutuallyFiniteIncomparability C C where
   maximal := by
-    have hhull : convexHull ((C : Set α) ∪ C) = C := by
-      simpa only [Set.union_self] using convexHull_saturatedChain_self C
     have hmax : IsMaximalChainIn C (convexHull ((C : Set α) ∪ C)) := by
-      refine ⟨?_, C.isChain, ?_⟩
-      · rw [hhull]
-      · intro D hD hsub hCD
-        apply Set.Subset.antisymm hCD
-        rw [hhull] at hsub
-        exact hsub
+      simpa only [Set.union_self] using C.maximalIn_convexHull
     exact ⟨hmax, hmax⟩
   left_finite := by
     intro y
@@ -356,6 +351,86 @@ private theorem MutuallyFiniteIncomparability.crossRelated_strictMono
         (fun heq => hy'x'.ne heq.symm)
         (fun hinc => hinc.not_ge hy'x'.le)
   exact htargetFar (h.crossRelated_same_source hxy hxy')
+
+/-- Different corresponding distance classes are separated in the ambient order, in both cross
+directions.  This is the main geometric interface used when composing normalized witnesses. -/
+theorem MutuallyFiniteIncomparability.crossRelated_separates
+    {C D : SaturatedChain α} (h : MutuallyFiniteIncomparability C D)
+    {x x' : C} {y y' : D} (hxx' : FiniteDistanceClass.mk x < FiniteDistanceClass.mk x')
+    (hxy : CrossRelated x y) (hx'y' : CrossRelated x' y') :
+    x.1 < y'.1 ∧ y.1 < x'.1 := by
+  rw [FiniteDistanceClass.mk_lt_mk] at hxx'
+  have hyy' : y < y' := h.crossRelated_strictMono hxx'.1 hxx'.2 hxy hx'y'
+  have htargetFar : ¬FiniteDistance D y y' := by
+    intro hdist
+    exact hxx'.2
+      (h.symm.crossRelated_respects_finiteDistance hdist hxy.symm hx'y'.symm)
+  have hxy'Comp : ¬Incomparable x.1 y'.1 := by
+    intro hinc
+    exact htargetFar (h.crossRelated_same_source hxy (Or.inr hinc))
+  have hnotY'LeX : ¬y'.1 ≤ x.1 := by
+    intro hy'x
+    exact hxy.elim
+      (fun heq => (not_lt_of_ge (hy'x.trans (le_of_eq heq)))
+        (show y.1 < y'.1 from hyy'))
+      (fun hinc => hinc.not_ge
+        ((show y.1 ≤ y'.1 from hyy'.le).trans hy'x))
+  have hxy'Le : x.1 ≤ y'.1 := by
+    rcases not_incompRel_iff_symmGen.mp hxy'Comp with hxy' | hy'x
+    · exact hxy'
+    · exact False.elim (hnotY'LeX hy'x)
+  have hxy'Lt : x.1 < y'.1 :=
+    lt_of_le_of_ne hxy'Le (fun heq => hnotY'LeX (le_of_eq heq.symm))
+  have hyx'Comp : ¬Incomparable y.1 x'.1 := by
+    intro hinc
+    exact hxx'.2 (h.symm.crossRelated_same_source hxy.symm (Or.inr hinc))
+  have hnotX'LeY : ¬x'.1 ≤ y.1 := by
+    intro hx'y
+    exact hx'y'.elim
+      (fun heq => (not_lt_of_ge ((le_of_eq heq.symm).trans hx'y))
+        (show y.1 < y'.1 from hyy'))
+      (fun hinc => hinc.not_le
+        (hx'y.trans (show y.1 ≤ y'.1 from hyy'.le)))
+  have hyx'Le : y.1 ≤ x'.1 := by
+    rcases not_incompRel_iff_symmGen.mp hyx'Comp with hyx' | hx'y
+    · exact hyx'
+    · exact False.elim (hnotX'LeY hx'y)
+  exact ⟨hxy'Lt,
+    lt_of_le_of_ne hyx'Le (fun heq => hnotX'LeY (le_of_eq heq.symm))⟩
+
+/-- A no-top target is cofinal above every point of a mutually finite-incomparable source. -/
+theorem MutuallyFiniteIncomparability.exists_right_gt
+    {C D : SaturatedChain α} (h : MutuallyFiniteIncomparability C D)
+    (hD : D.NoTop) (x : C) : ∃ y : D, x.1 < y.1 := by
+  classical
+  obtain ⟨d, hxd⟩ := h.exists_crossRelated_right x
+  let S : Set D := insert d (incomparabilityTrace D x.1)
+  have hSfinite : S.Finite := (Set.finite_singleton d).union (h.right_finite x)
+  obtain ⟨b, hbS, hbmax⟩ := hSfinite.exists_maximal ⟨d, Set.mem_insert d _⟩
+  have hbUpper : ∀ w ∈ S, w ≤ b := by
+    intro w hw
+    rcases le_total w b with hwb | hbw
+    · exact hwb
+    · exact hbmax hw hbw
+  obtain ⟨y, hby⟩ := hD.exists_gt b
+  have hyNotTrace : y ∉ incomparabilityTrace D x.1 := by
+    intro hy
+    exact (not_lt_of_ge (hbUpper y (Set.mem_insert_of_mem d hy))) hby
+  have hnotYLeX : ¬y.1 ≤ x.1 := by
+    intro hyx
+    have hdy : d.1 < y.1 := (hbUpper d (Set.mem_insert d _)).trans_lt hby
+    exact hxd.elim
+      (fun heq => (not_lt_of_ge (hyx.trans (le_of_eq heq))) hdy)
+      (fun hinc => hinc.not_ge (hdy.le.trans hyx))
+  rcases not_incompRel_iff_symmGen.mp hyNotTrace with hyx | hxy
+  · exact False.elim (hnotYLeX hyx)
+  · exact ⟨y, lt_of_le_of_ne hxy (fun heq => hnotYLeX (le_of_eq heq.symm))⟩
+
+/-- Symmetric cofinality form. -/
+theorem MutuallyFiniteIncomparability.exists_left_gt
+    {C D : SaturatedChain α} (h : MutuallyFiniteIncomparability C D)
+    (hC : C.NoTop) (y : D) : ∃ x : C, y.1 < x.1 :=
+  h.symm.exists_right_gt hC y
 
 theorem MutuallyFiniteIncomparability.classMap_strictMono
     {C D : SaturatedChain α} (h : MutuallyFiniteIncomparability C D) :
@@ -577,22 +652,6 @@ instance : Coe (DecreasingChain α) (SaturatedChain α) := ⟨Subtype.val⟩
 /-- View a decreasing chain as an increasing chain in the dual order. -/
 def DecreasingChain.toDual (C : DecreasingChain α) : IncreasingChain αᵒᵈ :=
   ⟨C.1.dual, (SaturatedChain.dual_noTop_iff C.1).2 C.2⟩
-
-theorem SaturatedChain.NoTop.exists_gt {C : SaturatedChain α}
-    (h : C.NoTop) (x : C) : ∃ y : C, x < y := by
-  by_contra hex
-  apply h
-  refine ⟨x, ?_⟩
-  intro y
-  exact le_of_not_gt (fun hxy => hex ⟨y, hxy⟩)
-
-theorem SaturatedChain.NoBottom.exists_lt {C : SaturatedChain α}
-    (h : C.NoBottom) (x : C) : ∃ y : C, y < x := by
-  by_contra hex
-  apply h
-  refine ⟨x, ?_⟩
-  intro y
-  exact le_of_not_gt (fun hyx => hex ⟨y, hyx⟩)
 
 /-- A nonempty final segment of a chain without a top again has no top. -/
 theorem IncreasingChain.finalSegment_noTop (C : IncreasingChain α)

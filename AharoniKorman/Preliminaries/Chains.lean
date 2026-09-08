@@ -8,8 +8,38 @@ open Set
 
 variable {α : Type*} [PartialOrder α]
 
-/-- A chain which is order-convex in the ambient poset. -/
-def IsSaturatedChain (C : Set α) : Prop := IsChain (· ≤ ·) C ∧ C.OrdConnected
+/-- A chain with no insertable point between two of its points (the manuscript's
+definition). Ambient points incomparable with the chain need not belong to it. -/
+def IsSaturatedChain (C : Set α) : Prop :=
+  IsChain (· ≤ ·) C ∧ ∀ ⦃a b x⦄, a ∈ C → b ∈ C → a ≤ x → x ≤ b →
+    (∀ c ∈ C, x ≤ c ∨ c ≤ x) → x ∈ C
+
+theorem IsSaturatedChain.of_ordConnected {C : Set α}
+    (hc : IsChain (· ≤ ·) C) (ho : C.OrdConnected) : IsSaturatedChain C :=
+  ⟨hc, fun _ _ _ ha hb hax hxb _ => ho.out ha hb ⟨hax, hxb⟩⟩
+
+theorem IsSaturatedChain.dual {C : Set α} (h : IsSaturatedChain C) :
+    @IsSaturatedChain αᵒᵈ inferInstance C :=
+  ⟨h.1.symm, fun _ _ _ ha hb hax hxb hc =>
+    h.2 hb ha hxb hax (fun c hcC => (hc c hcC).symm)⟩
+
+/-- An interval of a saturated chain is saturated in the ambient poset. -/
+theorem IsSaturatedChain.restrict {C S : Set α} (h : IsSaturatedChain C)
+    (hsub : S ⊆ C)
+    (hconv : ∀ ⦃a b c⦄, a ∈ S → b ∈ S → c ∈ C → a ≤ c → c ≤ b → c ∈ S) :
+    IsSaturatedChain S := by
+  refine ⟨h.1.mono hsub, ?_⟩
+  intro a b x ha hb hax hxb hx
+  have hxC : x ∈ C := h.2 (hsub ha) (hsub hb) hax hxb (by
+    intro c hc
+    by_cases hca : c ≤ a
+    · exact Or.inr (hca.trans hax)
+    by_cases hbc : b ≤ c
+    · exact Or.inl (hxb.trans hbc)
+    have hac := (h.1.total (hsub ha) hc).resolve_right hca
+    have hcb := (h.1.total hc (hsub hb)).resolve_right hbc
+    exact hx c (hconv ha hb hc hac hcb))
+  exact hconv ha hb hxC hax hxb
 
 /-- An inclusion-maximal chain. -/
 abbrev IsMaximalChain (C : Set α) : Prop := IsMaxChain (· ≤ ·) C
@@ -72,7 +102,12 @@ def IsDirectionalCofinalIn (d : OrderDirection) (C D : Set α) : Prop :=
 @[simp] theorem isDirectionalCofinalIn_decreasing (C D : Set α) :
     IsDirectionalCofinalIn .decreasing C D ↔ IsCoinitialIn C D := Iff.rfl
 
-theorem isSaturatedChain_iff (C : Set α) :
-    IsSaturatedChain C ↔ IsChain (· ≤ ·) C ∧ C.OrdConnected := Iff.rfl
+theorem isSaturatedChain_iff {β : Type*} [LinearOrder β] (C : Set β) :
+    IsSaturatedChain C ↔ C.OrdConnected := by
+  constructor
+  · intro h
+    exact ⟨fun _ ha _ hb _ hx => h.2 ha hb hx.1 hx.2 (fun c _ => le_total _ c)⟩
+  · intro h
+    exact IsSaturatedChain.of_ordConnected (isChain_of_trichotomous C) h
 
 end AharoniKorman

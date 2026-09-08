@@ -11,7 +11,7 @@ open Set
 
 Every scattered linear order which contains an increasing copy of `ω` has a nonempty convex
 suborder which is increasing, still contains `ω`, and contains no copy of `ω + 1` (represented by
-`WithTop ℕ`).  The chain/convexity conjunction is the project's `IsSaturatedChain` predicate.
+`WithTop ℕ`). In a linear ambient order, saturation is equivalent to convexity.
 -/
 axiom exists_saturated_omega_no_omegaSucc {α : Type*} [LinearOrder α]
     (hscattered : IsScattered α) (homega : Nonempty (ℕ ↪o α)) :

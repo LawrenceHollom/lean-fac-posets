@@ -30,8 +30,10 @@ instance : SetLike (SaturatedChain α) α where
 theorem SaturatedChain.isChain (C : SaturatedChain α) : IsChain (· ≤ ·) (C : Set α) :=
   C.saturated.1
 
-theorem SaturatedChain.ordConnected (C : SaturatedChain α) : (C : Set α).OrdConnected :=
-  C.saturated.2
+theorem SaturatedChain.mem_of_between (C : SaturatedChain α) {a b x : α}
+    (ha : a ∈ C) (hb : b ∈ C) (hax : a ≤ x) (hxb : x ≤ b)
+    (hx : ∀ c ∈ C, x ≤ c ∨ c ≤ x) : x ∈ C :=
+  C.saturated.2 ha hb hax hxb hx
 
 noncomputable instance SaturatedChain.instLinearOrder (C : SaturatedChain α) : LinearOrder C := by
   classical
@@ -45,30 +47,20 @@ def SaturatedChain.restrict (C : SaturatedChain α) (d : OrderDirection) (S : Se
       exact
         { carrier := S
           nonempty := hne
-          saturated := by
-            constructor
-            · exact C.isChain.mono hS.1
-            · constructor
-              intro x hx y hy z hz
-              have hzC : z ∈ C := C.ordConnected.out (hS.1 hx) (hS.1 hy) hz
-              exact hS.2 hx hzC hz.1 }
+          saturated := C.saturated.restrict hS.1
+            (fun _ _ _ hx _ hz hxz _ => hS.2 hx hz hxz) }
   | decreasing =>
       exact
         { carrier := S
           nonempty := hne
-          saturated := by
-            constructor
-            · exact C.isChain.mono hS.1
-            · constructor
-              intro x hx y hy z hz
-              have hzC : z ∈ C := C.ordConnected.out (hS.1 hx) (hS.1 hy) hz
-              exact hS.2 hy hzC hz.2 }
+          saturated := C.saturated.restrict hS.1
+            (fun _ _ _ _ hy hz _ hzy => hS.2 hy hz hzy) }
 
 /-- Reverse the ambient order of a bundled saturated chain. -/
 def SaturatedChain.dual (C : SaturatedChain α) : SaturatedChain αᵒᵈ where
   carrier := fun x : αᵒᵈ => x ∈ C.carrier
   nonempty := C.nonempty
-  saturated := ⟨C.isChain.symm, C.ordConnected.dual⟩
+  saturated := C.saturated.dual
 
 @[simp] theorem SaturatedChain.mem_dual (C : SaturatedChain α) (x : α) :
     (show αᵒᵈ from x) ∈ C.dual ↔ x ∈ C := Iff.rfl
@@ -89,6 +81,22 @@ def HasBottom (C : SaturatedChain α) : Prop := ∃ m : C, ∀ x : C, m ≤ x
 def NoTop (C : SaturatedChain α) : Prop := ¬C.HasTop
 
 def NoBottom (C : SaturatedChain α) : Prop := ¬C.HasBottom
+
+theorem NoTop.exists_gt {C : SaturatedChain α} (h : C.NoTop) (x : C) :
+    ∃ y : C, x < y := by
+  by_contra hex
+  apply h
+  refine ⟨x, ?_⟩
+  intro y
+  exact le_of_not_gt (fun hxy => hex ⟨y, hxy⟩)
+
+theorem NoBottom.exists_lt {C : SaturatedChain α} (h : C.NoBottom) (x : C) :
+    ∃ y : C, y < x := by
+  by_contra hex
+  apply h
+  refine ⟨x, ?_⟩
+  intro y
+  exact le_of_not_gt (fun hyx => hex ⟨y, hyx⟩)
 
 theorem top_unique {C : SaturatedChain α} {m n : C}
     (hm : ∀ x : C, x ≤ m) (hn : ∀ x : C, x ≤ n) : m = n :=
