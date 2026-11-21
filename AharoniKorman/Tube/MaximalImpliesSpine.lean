@@ -1,4 +1,5 @@
 import AharoniKorman.Tube.PartitionExtension
+import AharoniKorman.Tube.Spine
 
 namespace AharoniKorman
 
@@ -6,12 +7,11 @@ open Set
 
 variable {α : Type*} [PartialOrder α]
 
-/-- Paper Proposition `prop:maximal-tube-suffices` (Stage 1 target), including the assertion that
-the resulting spine chain lies inside the maximal tube. -/
+/-- Paper `prop:maximal-tube-suffices`. The resulting spine lies inside the maximal tube. -/
 theorem maximalTube_hasSpine_inside [Countable α] (hfac : IsFAC α)
     {T : Set α} (hT : IsMaximalTube T) :
     ∃ C : Set α, C ⊆ T ∧ Nonempty (SpineData (Set.univ : Set α) C) := by
-  obtain ⟨C, ⟨S⟩⟩ := External.tube_hasSpine T hT.1
+  obtain ⟨C, ⟨S⟩⟩ := hT.1.hasSpine
   exact ⟨C, S.chain_subset, extend_spineData hfac hT S⟩
 
 /-- A countable FAC poset with a maximal tube has a spine. -/

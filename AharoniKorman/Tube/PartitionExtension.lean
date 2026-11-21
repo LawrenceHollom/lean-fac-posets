@@ -1,4 +1,4 @@
-import AharoniKorman.External.Zaguia
+import AharoniKorman.Tube.Defs
 import AharoniKorman.Preliminaries.Choice
 import Mathlib.Data.Set.Finite.Lattice
 

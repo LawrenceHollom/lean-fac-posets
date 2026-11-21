@@ -21,6 +21,22 @@ def IsVacillating (α : Type*) [PartialOrder α] : Prop :=
     ¬ IsOmegaSumOfInfiniteCowellfounded C ∧
     ¬ @IsOmegaSumOfInfiniteCowellfounded αᵒᵈ inferInstance C
 
+private theorem not_omegaSum_of_finite_Icc (hfin : ∀ a b : α, (Icc a b).Finite)
+    (C : Set α) : ¬ IsOmegaSumOfInfiniteCowellfounded C := by
+  rintro ⟨B, _, hinf, _, hlt⟩
+  obtain ⟨a, ha⟩ := (hinf 0).nonempty
+  obtain ⟨b, hb⟩ := (hinf 2).nonempty
+  apply hinf 1 ((hfin a b).subset ?_)
+  intro x hx
+  exact ⟨(hlt (show 0 < 1 by decide) ha hx).le, (hlt (show 1 < 2 by decide) hx hb).le⟩
+
+/-- Any forbidden sum has an infinite interval between points of its first and third blocks. -/
+theorem isVacillating_of_finite_Icc (hfin : ∀ a b : α, (Icc a b).Finite) : IsVacillating α := by
+  intro C _
+  refine ⟨not_omegaSum_of_finite_Icc hfin C, not_omegaSum_of_finite_Icc (α := αᵒᵈ) ?_ C⟩
+  intro a b
+  exact (hfin b a).subset fun _ h => ⟨h.2, h.1⟩
+
 private theorem omegaSum_subtype_image {S : Set α} {C : Set S}
     (hC : IsOmegaSumOfInfiniteCowellfounded C) :
     IsOmegaSumOfInfiniteCowellfounded (Subtype.val '' C : Set α) := by

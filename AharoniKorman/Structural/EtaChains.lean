@@ -3,6 +3,7 @@ import AharoniKorman.Preliminaries.Intervals
 import Mathlib.Algebra.Order.Field.Basic
 import Mathlib.Algebra.Order.Field.Rat
 import Mathlib.Data.Rat.Denumerable
+import Mathlib.Data.Set.Countable
 import Mathlib.Order.CountableDenseLinearOrder
 import Mathlib.Order.Zorn
 
@@ -72,8 +73,12 @@ theorem IsEtaChain.exists_gt {C : Set α} (hC : IsEtaChain C) {x : α} (hx : x �
   change x' < e q
   simpa only [e.apply_symm_apply] using e.lt_iff_lt.mpr hq
 
+theorem IsEtaChain.countable {C : Set α} (hC : IsEtaChain C) : C.Countable := by
+  obtain ⟨e⟩ := hC
+  exact Function.Injective.countable e.symm.injective
+
 /-- Cantor's characterization of the rationals, in a set-level form convenient for this project. -/
-theorem isEtaChain_of_countable_dense [Countable α] {C : Set α}
+theorem isEtaChain_of_countable_dense {C : Set α} [Countable C]
     (hchain : IsChain (· ≤ ·) C) (hne : C.Nonempty)
     (hdense : ∀ ⦃x y⦄, x ∈ C → y ∈ C → x < y → ∃ z ∈ C, x < z ∧ z < y)
     (hleft : ∀ x ∈ C, ∃ y ∈ C, y < x)
@@ -150,13 +155,18 @@ theorem IsEtaChain.exists_etaMaximal [Countable α] {C : Set α} (hC : IsEtaChai
 
 /-- Paper Lemma `lem:eta-nesting`, in the set-level form used by replacement composition: a
 rationally indexed sum of nonempty singleton-or-eta blocks has order type eta. -/
-theorem eta_nesting [Countable α] (B : ℚ → Set α)
+theorem eta_nesting (B : ℚ → Set α)
     (hne : ∀ q, (B q).Nonempty)
     (hshape : ∀ q, (∃ x, B q = {x}) ∨ IsEtaChain (B q))
     (hordered : ∀ ⦃p q : ℚ⦄, p < q → SetStrictLT (B p) (B q)) :
     IsEtaChain (⋃ q, B q) := by
   classical
   let U : Set α := ⋃ q, B q
+  let : Countable U := Set.countable_iUnion fun q => by
+    rcases hshape q with ⟨x, hx⟩ | hq
+    · rw [hx]
+      exact Set.countable_singleton x
+    · exact hq.countable
   have hmem (q : ℚ) : B q ⊆ U := fun _ hx => Set.mem_iUnion_of_mem q hx
   have hUchain : IsChain (· ≤ ·) U := by
     intro x hx y hy hxy
@@ -212,10 +222,11 @@ theorem eta_nesting [Countable α] (B : ℚ → Set α)
     exact ⟨y, hmem p hyp, hordered hqp hxq hyp⟩
 
 /-- Taking the convex hull inside an eta-chain preserves order type eta. -/
-theorem etaChain_convexHullIn [Countable α] {S D : Set α} (hS : IsEtaChain S)
+theorem etaChain_convexHullIn {S D : Set α} (hS : IsEtaChain S)
     (hSD : S ⊆ D) (hD : IsEtaChain D) : IsEtaChain (convexHullIn D S) := by
   let H := convexHullIn D S
   have hHD : H ⊆ D := convexHullIn_subset D S
+  let : Countable H := hD.countable.mono hHD
   have hinterval : IsIntervalIn H D := convexHullIn_interval D S
   have hchain : IsChain (· ≤ ·) H := fun x hx y hy hxy =>
     hD.isChain (hHD hx) (hHD hy) hxy
@@ -233,9 +244,10 @@ theorem etaChain_convexHullIn [Countable α] {S D : Set α} (hS : IsEtaChain S)
     obtain ⟨y, hy, hby⟩ := hS.exists_gt hb
     exact ⟨y, subset_convexHullIn hSD hy, hxb.trans_lt hby⟩
 
-theorem IsEtaChain.upperSection [Countable α] {S : Set α} (hS : IsEtaChain S)
+theorem IsEtaChain.upperSection {S : Set α} (hS : IsEtaChain S)
     {a : α} (ha : a ∈ S) : IsEtaChain (S ∩ Set.Ioi a) := by
   have hsub : S ∩ Set.Ioi a ⊆ S := Set.inter_subset_left
+  let : Countable (S ∩ Set.Ioi a : Set α) := hS.countable.mono hsub
   apply isEtaChain_of_countable_dense
     (fun x hx y hy hxy => hS.isChain (hsub hx) (hsub hy) hxy)
   · obtain ⟨x, hx, hax⟩ := hS.exists_gt ha
@@ -250,9 +262,10 @@ theorem IsEtaChain.upperSection [Countable α] {S : Set α} (hS : IsEtaChain S)
     obtain ⟨y, hy, hxy⟩ := hS.exists_gt hx.1
     exact ⟨y, ⟨hy, hx.2.trans hxy⟩, hxy⟩
 
-theorem IsEtaChain.lowerSection [Countable α] {S : Set α} (hS : IsEtaChain S)
+theorem IsEtaChain.lowerSection {S : Set α} (hS : IsEtaChain S)
     {a : α} (ha : a ∈ S) : IsEtaChain (S ∩ Set.Iio a) := by
   have hsub : S ∩ Set.Iio a ⊆ S := Set.inter_subset_left
+  let : Countable (S ∩ Set.Iio a : Set α) := hS.countable.mono hsub
   apply isEtaChain_of_countable_dense
     (fun x hx y hy hxy => hS.isChain (hsub hx) (hsub hy) hxy)
   · obtain ⟨x, hx, hxa⟩ := hS.exists_lt ha
@@ -268,11 +281,12 @@ theorem IsEtaChain.lowerSection [Countable α] {S : Set α} (hS : IsEtaChain S)
     exact ⟨y, ⟨hy, hya⟩, hxy⟩
 
 /-- Inserting a dense fibre immediately above one point of an eta-chain again gives an eta-chain. -/
-theorem etaChain_union_fiber_above [Countable α] {C Y : Set α} {x : α}
+theorem etaChain_union_fiber_above {C Y : Set α} {x : α}
     (hC : IsEtaChain C) (hx : x ∈ C) (hY : IsEtaChain Y)
     (hbelow : ∀ c ∈ C, c < x → ∀ y ∈ Y, c < y)
     (habove : ∀ c ∈ C, x < c → ∀ y ∈ Y, y < c)
     (hxY : ∀ y ∈ Y, x < y) : IsEtaChain (C ∪ Y) := by
+  let : Countable (C ∪ Y : Set α) := hC.countable.union hY.countable
   have hchain : IsChain (· ≤ ·) (C ∪ Y) := by
     intro a ha b hb hab
     rcases ha with haC | haY <;> rcases hb with hbC | hbY
@@ -342,12 +356,11 @@ private def subtypeOrderDualIso (S : Set α) :
   map_rel_iff' := by intros; rfl
 
 /-- The order-dual version of `etaChain_union_fiber_above`. -/
-theorem etaChain_union_fiber_below [Countable α] {C Y : Set α} {x : α}
+theorem etaChain_union_fiber_below {C Y : Set α} {x : α}
     (hC : IsEtaChain C) (hx : x ∈ C) (hY : IsEtaChain Y)
     (hbelow : ∀ c ∈ C, c < x → ∀ y ∈ Y, c < y)
     (habove : ∀ c ∈ C, x < c → ∀ y ∈ Y, y < c)
     (hYx : ∀ y ∈ Y, y < x) : IsEtaChain (C ∪ Y) := by
-  let : Countable αᵒᵈ := ‹Countable α›
   have hCdual : @IsEtaChain αᵒᵈ inferInstance C := by
     obtain ⟨e⟩ := hC
     exact ⟨ratOrderIsoDual.trans (e.dual.trans (subtypeOrderDualIso C))⟩
@@ -355,7 +368,7 @@ theorem etaChain_union_fiber_below [Countable α] {C Y : Set α} {x : α}
     obtain ⟨e⟩ := hY
     exact ⟨ratOrderIsoDual.trans (e.dual.trans (subtypeOrderDualIso Y))⟩
   have hdual : @IsEtaChain αᵒᵈ inferInstance (C ∪ Y) :=
-    @etaChain_union_fiber_above αᵒᵈ inferInstance _ C Y x hCdual hx hYdual
+    @etaChain_union_fiber_above αᵒᵈ inferInstance C Y x hCdual hx hYdual
       (fun c hc hxc y hy => habove c hc hxc y hy)
       (fun c hc hcx y hy => hbelow c hc hcx y hy)
       (fun y hy => hYx y hy)

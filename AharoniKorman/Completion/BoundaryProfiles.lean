@@ -116,6 +116,23 @@ namespace DecreasingGerm
 def upperProfile (g : DecreasingGerm α) : Set α :=
   IncreasingGerm.lowerProfile (α := αᵒᵈ) g.toDual
 
+@[simp] theorem mem_upperProfile_ofChain (C : DecreasingChain α) (x : α) :
+    x ∈ (ofChain C).upperProfile ↔ ∃ c : C.1, c.1 < x :=
+  IncreasingGerm.mem_lowerProfile_ofChain (α := αᵒᵈ) C.toDual x
+
+theorem mem_upperProfile (g : DecreasingGerm α) (x : α) :
+    x ∈ g.upperProfile ↔ H.decreasing g < H.principal x := by
+  induction g using DecreasingGerm.inductionOn with
+  | h C =>
+    exact (mem_upperProfile_ofChain C x).trans (H.decreasing_ofChain_lt_principal C x).symm
+
+theorem representative_mem_upperProfile (C : DecreasingChain α) (c : C.1) :
+    c.1 ∈ (ofChain C).upperProfile :=
+  IncreasingGerm.representative_mem_lowerProfile (α := αᵒᵈ) C.toDual c
+
+theorem upperProfile_isUpperSet (g : DecreasingGerm α) : IsUpperSet g.upperProfile :=
+  IncreasingGerm.lowerProfile_isLowerSet (α := αᵒᵈ) g.toDual
+
 /-- The local decreasing consolidation condition. -/
 def CoinitialBelow (g h : DecreasingGerm α) : Prop :=
   IncreasingGerm.CofinalAbove (α := αᵒᵈ) g.toDual h.toDual

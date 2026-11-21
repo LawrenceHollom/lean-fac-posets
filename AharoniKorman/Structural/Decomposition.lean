@@ -480,14 +480,12 @@ structure ScatteredDecomposition (α : Type*) [PartialOrder α] where
   piece_ordConnected : ∀ r, (piece r).OrdConnected
   piece_scattered : ∀ r, IsScattered (piece r)
 
-/-- Theorem 1.4 / paper `thm:structural` (Stage 2 target). -/
+/-- Paper `thm:structural`. -/
 theorem structural_decomposition [Countable α] (hfac : IsFAC α) :
     IsScattered α ∨ Nonempty (ScatteredDecomposition α) := by
-  classical
-  by_cases hscattered : IsScattered α
+  rcases scattered_or_exists_etaStronglyMaximal hfac with hscattered | ⟨C, hC⟩
   · exact Or.inl hscattered
   · right
-    obtain ⟨C, hC⟩ := exists_etaStronglyMaximal hfac hscattered
     obtain ⟨e⟩ := hC.1.1
     exact ⟨
       { piece := etaPiece e

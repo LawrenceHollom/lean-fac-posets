@@ -10,7 +10,7 @@ universe u
 
 variable {α : Type u} [PartialOrder α]
 
-/-- Paper Corollary `cor:scattered-reduction` (the second Stage 2 target). -/
+/-- Paper corollary `cor:scattered-reduction`. -/
 theorem maximalTube_reduction_to_scattered [Countable α]
     (hfac : IsFAC α) (hvac : IsVacillating α)
     (scattered_case : ∀ (β : Type u) [PartialOrder β] [Countable β],

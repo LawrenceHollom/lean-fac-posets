@@ -1,8 +1,6 @@
 import AharoniKorman.Completion.Construction
 
-/-! Representatives of genuine nonprincipal points (paper `def:h-p`).
-The formal endpoints have no representative; every other nonprincipal point does.
-All germ operations here use the public Phase C API. -/
+/-! Representatives of the signed points in `def:h-p`. -/
 
 namespace AharoniKorman.Completion
 

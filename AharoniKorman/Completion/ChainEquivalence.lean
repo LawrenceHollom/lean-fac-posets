@@ -72,6 +72,95 @@ theorem MutuallyFiniteIncomparability.exists_crossRelated_left
     h.maximal.left_incomparable (mem_common_convexHull_right C D y) hyC
   exact ⟨⟨x, hxC⟩, Or.inr hyx.symm⟩
 
+private theorem maximalIn_convexHull_union_of_crossRelated {C D : SaturatedChain α}
+    (hcontact : ∀ d : D, ∃ c : C, CrossRelated c d) :
+    IsMaximalChainIn C (convexHull ((C : Set α) ∪ D)) := by
+  refine ⟨fun x hx => mem_common_convexHull_left C D ⟨x, hx⟩, C.isChain, ?_⟩
+  intro S hS hsub hCS
+  apply Subset.antisymm hCS
+  intro z hz
+  obtain ⟨a, ha, b, hb, haz, hzb⟩ := hsub hz
+  have hcomp (c : C) : z ≤ c.1 ∨ c.1 ≤ z := hS.total hz (hCS c.2)
+  have hlo : ∃ c : C, c.1 ≤ z := by
+    rcases ha with ha | ha
+    · exact ⟨⟨a, ha⟩, haz⟩
+    obtain ⟨c, hca⟩ := hcontact ⟨a, ha⟩
+    refine ⟨c, ?_⟩
+    by_contra hc
+    have hac : a < c.1 := haz.trans_lt (lt_of_le_not_ge ((hcomp c).resolve_right hc) hc)
+    exact hca.elim (fun he => hac.ne he.symm) (fun hi => hi.not_ge hac.le)
+  have hhi : ∃ c : C, z ≤ c.1 := by
+    rcases hb with hb | hb
+    · exact ⟨⟨b, hb⟩, hzb⟩
+    obtain ⟨c, hcb⟩ := hcontact ⟨b, hb⟩
+    refine ⟨c, ?_⟩
+    by_contra hc
+    have hcb' : c.1 < b := (lt_of_le_not_ge ((hcomp c).resolve_left hc) hc).trans_le hzb
+    exact hcb.elim hcb'.ne (fun hi => hi.not_le hcb'.le)
+  obtain ⟨l, hl⟩ := hlo
+  obtain ⟨r, hr⟩ := hhi
+  exact C.mem_of_between l.2 r.2 hl hr (fun c hc => hcomp ⟨c, hc⟩)
+
+/-- For saturated chains, the paper's nonempty equality-or-incomparability
+traces imply the joint convex-hull maximality formulation. -/
+theorem MutuallyFiniteIncomparability.of_finite_crossRelated {C D : SaturatedChain α}
+    (hleft : ∀ y : D, (incomparabilityTrace C y.1).Finite)
+    (hright : ∀ x : C, (incomparabilityTrace D x.1).Finite)
+    (hcontactLeft : ∀ y : D, ∃ x : C, CrossRelated x y)
+    (hcontactRight : ∀ x : C, ∃ y : D, CrossRelated x y) :
+    MutuallyFiniteIncomparability C D := by
+  refine ⟨⟨maximalIn_convexHull_union_of_crossRelated hcontactLeft, ?_⟩, hleft, hright⟩
+  rw [union_comm]
+  apply maximalIn_convexHull_union_of_crossRelated
+  intro x
+  obtain ⟨y, hxy | hxy⟩ := hcontactRight x
+  · exact ⟨y, Or.inl hxy.symm⟩
+  · exact ⟨y, Or.inr hxy.symm⟩
+
+/-- Paper `def:mutually-finite-incomp`: both equality-or-incomparability traces
+are finite and nonempty at every point. -/
+theorem mutuallyFiniteIncomparability_iff_crossRelated {C D : SaturatedChain α} :
+    MutuallyFiniteIncomparability C D ↔
+      (∀ x : C, ({y : D | CrossRelated x y} : Set D).Finite ∧
+        ({y : D | CrossRelated x y} : Set D).Nonempty) ∧
+      (∀ y : D, ({x : C | CrossRelated x y} : Set C).Finite ∧
+        ({x : C | CrossRelated x y} : Set C).Nonempty) := by
+  constructor
+  · intro h
+    constructor
+    · intro x
+      have heq : ({y : D | x.1 = y.1} : Set D).Finite :=
+        Set.Subsingleton.finite (fun _ hy _ hz => Subtype.ext (hy.symm.trans hz))
+      refine ⟨(heq.union (h.right_finite x)).subset ?_, h.exists_crossRelated_right x⟩
+      rintro y (hey | hxy)
+      · exact Or.inl hey
+      · exact Or.inr hxy.symm
+    · intro y
+      have heq : ({x : C | x.1 = y.1} : Set C).Finite :=
+        Set.Subsingleton.finite (fun _ hx _ hz => Subtype.ext (hx.trans hz.symm))
+      exact ⟨heq.union (h.left_finite y), h.exists_crossRelated_left y⟩
+  · rintro ⟨hD, hC⟩
+    exact MutuallyFiniteIncomparability.of_finite_crossRelated
+      (fun y => (hC y).1.subset (fun _ hx => Or.inr hx))
+      (fun x => (hD x).1.subset (fun _ hy => Or.inr hy.symm))
+      (fun y => (hC y).2) (fun x => (hD x).2)
+
+theorem MutuallyFiniteIncomparability.dual {C D : SaturatedChain α}
+    (h : MutuallyFiniteIncomparability C D) : MutuallyFiniteIncomparability C.dual D.dual := by
+  apply MutuallyFiniteIncomparability.of_finite_crossRelated
+  · intro d
+    exact (h.left_finite ⟨d.1, d.2⟩).subset (fun _ hx => ⟨hx.2, hx.1⟩)
+  · intro c
+    exact (h.right_finite ⟨c.1, c.2⟩).subset (fun _ hx => ⟨hx.2, hx.1⟩)
+  · intro d
+    obtain ⟨c, hc | hc⟩ := h.exists_crossRelated_left ⟨d.1, d.2⟩
+    · exact ⟨⟨c.1, c.2⟩, Or.inl hc⟩
+    · exact ⟨⟨c.1, c.2⟩, Or.inr ⟨hc.2, hc.1⟩⟩
+  · intro c
+    obtain ⟨d, hd | hd⟩ := h.exists_crossRelated_right ⟨c.1, c.2⟩
+    · exact ⟨⟨d.1, d.2⟩, Or.inl hd⟩
+    · exact ⟨⟨d.1, d.2⟩, Or.inr ⟨hd.2, hd.1⟩⟩
+
 private theorem CrossRelated.lower_le_of_comparable
     {C D : SaturatedChain α} {x c : C} {y : D}
     (hxy : CrossRelated x y) (hcx : c < x)
@@ -432,6 +521,24 @@ theorem MutuallyFiniteIncomparability.exists_left_gt
     (hC : C.NoTop) (y : D) : ∃ x : C, y.1 < x.1 :=
   h.symm.exists_right_gt hC y
 
+/-- Paper `lem:mfi-max-iff-max`, increasing direction. -/
+theorem MutuallyFiniteIncomparability.hasTop_iff {C D : SaturatedChain α}
+    (h : MutuallyFiniteIncomparability C D) : C.HasTop ↔ D.HasTop := by
+  have preserves {A B : SaturatedChain α} (hAB : MutuallyFiniteIncomparability A B)
+      (hA : A.HasTop) : B.HasTop := by
+    by_contra hB
+    obtain ⟨m, hm⟩ := hA
+    obtain ⟨b, hmb⟩ := hAB.exists_right_gt hB m
+    obtain ⟨a, hab⟩ := hAB.exists_crossRelated_left b
+    have hab' : a.1 < b.1 := (show a.1 ≤ m.1 from hm a).trans_lt hmb
+    exact hab.elim hab'.ne (fun hi => hi.not_le hab'.le)
+  exact ⟨preserves h, preserves h.symm⟩
+
+/-- Paper `lem:mfi-max-iff-max`, decreasing direction. -/
+theorem MutuallyFiniteIncomparability.hasBottom_iff {C D : SaturatedChain α}
+    (h : MutuallyFiniteIncomparability C D) : C.HasBottom ↔ D.HasBottom := by
+  simpa only [SaturatedChain.dual_hasTop_iff] using h.dual.hasTop_iff
+
 theorem MutuallyFiniteIncomparability.classMap_strictMono
     {C D : SaturatedChain α} (h : MutuallyFiniteIncomparability C D) :
     StrictMono h.classMap := by
@@ -620,7 +727,7 @@ theorem MutuallyFiniteIncomparability.classMap_preserves_hasMin
     exact h.symm.correspondence_preserves_hasMin
       (h.classMap_corresponds X).symm hmin
 
-/-- Paper Lemma `lem:sim-equivalence-bijection`: mutually finite-incomparable chains have
+/-- Paper `lem:mfi-canonical-isomorphism`: mutually finite-incomparable chains have
 canonically order-isomorphic finite-distance quotients. -/
 noncomputable def MutuallyFiniteIncomparability.classOrderIso
     {C D : SaturatedChain α} (h : MutuallyFiniteIncomparability C D) :
@@ -635,6 +742,80 @@ noncomputable def MutuallyFiniteIncomparability.classOrderIso
         (h.symm.classMap_corresponds Y).symm
         (h.classMap_corresponds (h.symm.classMap Y))).symm }
   exact e.toOrderIso h.classMap_strictMono.monotone h.symm.classMap_strictMono.monotone
+
+theorem MutuallyFiniteIncomparability.classOrderIso_mk_of_crossRelated
+    {C D : SaturatedChain α} (h : MutuallyFiniteIncomparability C D)
+    {x : C} {y : D} (hxy : CrossRelated x y) :
+    h.classOrderIso (FiniteDistanceClass.mk x) = FiniteDistanceClass.mk y :=
+  h.class_correspondence_unique_right (h.classMap_corresponds _) ⟨x, y, rfl, rfl, hxy⟩
+
+/-- The class `X` as a saturated subchain of the original poset. -/
+def FiniteDistanceClass.chain {C : SaturatedChain α} (X : FiniteDistanceClass C) :
+    SaturatedChain α where
+  carrier := {a | ∃ ha : a ∈ C, FiniteDistanceClass.mk (⟨a, ha⟩ : C) = X}
+  nonempty := by
+    obtain ⟨x, rfl⟩ := Quotient.exists_rep X
+    exact ⟨x.1, x.2, rfl⟩
+  saturated := by
+    apply C.saturated.restrict (fun _ ha => ha.choose)
+    rintro a b z ⟨ha, haX⟩ ⟨hb, hbX⟩ hz haz hzb
+    refine ⟨hz, ?_⟩
+    rw [← haX, FiniteDistanceClass.mk_eq_mk]
+    exact ((finiteDistanceClassSet_ordConnected C (⟨a, ha⟩ : C)).out
+      (FiniteDistance.refl C _) (FiniteDistanceClass.mk_eq_mk.mp (haX.trans hbX.symm))
+      ⟨haz, hzb⟩).symm
+
+/-- Paper `lem:mfi-quotient`: corresponding finite-distance classes have
+mutually finite incomparability. -/
+theorem MutuallyFiniteIncomparability.classOrderIso_mfi {C D : SaturatedChain α}
+    (h : MutuallyFiniteIncomparability C D) (X : FiniteDistanceClass C) :
+    MutuallyFiniteIncomparability X.chain (h.classOrderIso X).chain := by
+  let left (a : X.chain) : C := ⟨a.1, a.2.choose⟩
+  let right (b : (h.classOrderIso X).chain) : D := ⟨b.1, b.2.choose⟩
+  apply MutuallyFiniteIncomparability.of_finite_crossRelated
+  · intro b
+    exact (h.left_finite (right b)).of_injective (f := fun a => ⟨left a.1, a.2⟩)
+      (fun _ _ eq => Subtype.ext (Subtype.ext (congrArg (fun t => t.1.1) eq)))
+  · intro a
+    exact (h.right_finite (left a)).of_injective (f := fun b => ⟨right b.1, b.2⟩)
+      (fun _ _ eq => Subtype.ext (Subtype.ext (congrArg (fun t => t.1.1) eq)))
+  · intro b
+    obtain ⟨a, hab⟩ := h.exists_crossRelated_left (right b)
+    have ha : FiniteDistanceClass.mk a = X := h.classOrderIso.injective
+      ((h.classOrderIso_mk_of_crossRelated hab).trans b.2.choose_spec)
+    exact ⟨⟨a.1, a.2, ha⟩, hab⟩
+  · intro a
+    obtain ⟨b, hab⟩ := h.exists_crossRelated_right (left a)
+    have hb : FiniteDistanceClass.mk b = h.classOrderIso X :=
+      (h.classOrderIso_mk_of_crossRelated hab).symm.trans
+        (congrArg h.classOrderIso a.2.choose_spec)
+    exact ⟨⟨b.1, b.2, hb⟩, hab⟩
+
+/-- Paper `lem:mfi-quotient`: different corresponding classes are cross-ordered. -/
+theorem MutuallyFiniteIncomparability.classOrderIso_separates {C D : SaturatedChain α}
+    (h : MutuallyFiniteIncomparability C D) {X Y : FiniteDistanceClass C} (hXY : X < Y) :
+    SetStrictLT (X.chain : Set α) (h.classOrderIso Y).chain ∧
+      SetStrictLT ((h.classOrderIso X).chain : Set α) Y.chain := by
+  have separate {a c : α} (ha : a ∈ X.chain) (hc : c ∈ Y.chain) :
+      ∀ {b d : α} (hb : b ∈ (h.classOrderIso X).chain) (hd : d ∈ (h.classOrderIso Y).chain),
+      CrossRelated (⟨a, ha.choose⟩ : C) (⟨b, hb.choose⟩ : D) →
+      CrossRelated (⟨c, hc.choose⟩ : C) (⟨d, hd.choose⟩ : D) →
+      a < d ∧ b < c := by
+    intro b d hb hd hab hcd
+    have hclasses : FiniteDistanceClass.mk (⟨a, ha.choose⟩ : C) <
+        FiniteDistanceClass.mk (⟨c, hc.choose⟩ : C) := by
+      rw [ha.choose_spec, hc.choose_spec]
+      exact hXY
+    exact h.crossRelated_separates hclasses hab hcd
+  constructor
+  · intro a ha d hd
+    obtain ⟨b, hab⟩ := (h.classOrderIso_mfi X).exists_crossRelated_right ⟨a, ha⟩
+    obtain ⟨c, hcd⟩ := (h.classOrderIso_mfi Y).exists_crossRelated_left ⟨d, hd⟩
+    exact (separate ha c.2 b.2 hd hab hcd).1
+  · intro b hb c hc
+    obtain ⟨a, hab⟩ := (h.classOrderIso_mfi X).exists_crossRelated_left ⟨b, hb⟩
+    obtain ⟨d, hcd⟩ := (h.classOrderIso_mfi Y).exists_crossRelated_right ⟨c, hc⟩
+    exact (separate a.2 hc hb d.2 hab hcd).2
 
 /-- Saturated chains with no greatest point.  Principal chains are deliberately excluded before
 taking the increasing-chain quotient. -/

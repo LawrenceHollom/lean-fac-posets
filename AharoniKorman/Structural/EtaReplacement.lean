@@ -118,7 +118,7 @@ private theorem composedRaw_of_singleton {C D E : Set α} (f : EtaReplacement C 
 
 /-- Paper Lemma `lem:etalt-transitive`: replacement witnesses compose by taking the convex hull,
 inside the final chain, of the iterated images. -/
-def EtaReplacement.comp [Countable α] {C D E : Set α}
+def EtaReplacement.comp {C D E : Set α}
     (g : EtaReplacement D E) (f : EtaReplacement C D) : EtaReplacement C E where
   source := f.source
   target := g.target
@@ -179,7 +179,7 @@ def EtaReplacement.comp [Countable α] {C D E : Set α}
     have huy : u < y.1 := f.image_lt_source ⟨w, hwC⟩ y hwy u hu
     exact hzb.trans_lt (hbu.trans huy)
 
-theorem etaReplaces_trans [Countable α] {C D E : Set α} :
+theorem etaReplaces_trans {C D E : Set α} :
     EtaReplaces C D → EtaReplaces D E → EtaReplaces C E := by
   rintro ⟨f⟩ ⟨g⟩
   exact ⟨g.comp f⟩
@@ -195,7 +195,7 @@ theorem EtaReplacement.eq_source_of_mem_image {C D : Set α} (f : EtaReplacement
 
 /-- Paper Lemma `lem:etalt-incomparability`: a genuinely new point in a replacement fibre is
 incomparable with the source point it replaces. -/
-theorem EtaReplacement.image_incomparable [Countable α] {C D : Set α}
+theorem EtaReplacement.image_incomparable {C D : Set α}
     (f : EtaReplacement C D) (x : C) {y : α} (hy : y ∈ f.image x) (hyx : y ≠ x.1) :
     Incomparable y x.1 := by
   have hImageEta : IsEtaChain (f.image x) := by
@@ -235,6 +235,15 @@ theorem EtaReplacement.image_incomparable [Countable α] {C D : Set α}
     have hEq := f.source.2 (C ∪ Y) hUnion Set.subset_union_left
     exact hzNotC (by rw [← hEq]; exact Or.inr hzY)
 
+/-- The paper uses parallelism, which includes equality, at retained points. -/
+theorem EtaReplacement.image_parallel {C D : Set α}
+    (f : EtaReplacement C D) (x : C) {y : α} (hy : y ∈ f.image x) :
+    ¬ (y < x.1 ∨ x.1 < y) := by
+  by_cases h : y = x.1
+  · simp [h]
+  · have hi := f.image_incomparable x hy h
+    exact fun hs => hs.elim hi.not_lt hi.not_gt
+
 theorem EtaReplacement.self_trivial {C : Set α} (f : EtaReplacement C C) : f.Trivial := by
   intro x
   apply Set.Subset.antisymm
@@ -244,7 +253,7 @@ theorem EtaReplacement.self_trivial {C : Set α} (f : EtaReplacement C C) : f.Tr
     have hyx := f.eq_source_of_mem_image x ((f.image_interval x).1 hy) hy
     simpa only [Set.singleton_subset_iff, ← hyx] using hy
 
-theorem EtaReplacement.trivial_left_of_comp_trivial [Countable α]
+theorem EtaReplacement.trivial_left_of_comp_trivial
     {C D E : Set α} (g : EtaReplacement D E) (f : EtaReplacement C D)
     (hcomp : (g.comp f).Trivial) : f.Trivial := by
   intro x
@@ -268,7 +277,7 @@ theorem EtaReplacement.trivial_left_of_comp_trivial [Countable α]
     have hne : dD ≠ eD := fun h => hde.ne (congrArg Subtype.val h)
     exact Set.disjoint_left.mp (g.images_disjoint hne) hu (by simpa [hux, hvx] using hv)
 
-theorem EtaReplacement.comp_image_eta_of_image_eta [Countable α]
+theorem EtaReplacement.comp_image_eta_of_image_eta
     {C D E : Set α} (g : EtaReplacement D E) (f : EtaReplacement C D) (x : C)
     (heta : IsEtaChain (f.image x)) : IsEtaChain ((g.comp f).image x) := by
   rcases (g.comp f).image_shape x with hsingleton | hresult
@@ -291,7 +300,7 @@ theorem EtaReplacement.comp_image_eta_of_image_eta [Countable α]
     exact Set.disjoint_left.mp (g.images_disjoint hne) hu (huv ▸ hv)
   · exact hresult
 
-theorem etaReplaces_antisymm [Countable α] {C D : Set α}
+theorem etaReplaces_antisymm {C D : Set α}
     (hCD : EtaReplaces C D) (hDC : EtaReplaces D C) : C = D := by
   obtain ⟨f⟩ := hCD
   obtain ⟨g⟩ := hDC
@@ -300,7 +309,7 @@ theorem etaReplaces_antisymm [Countable α] {C D : Set α}
 
 /-- Paper Lemma `lem:etalt-antisymmetric`, in its persistence form: once a source point is
 removed, no later replacement can reintroduce it. -/
-theorem EtaReplacement.not_mem_of_not_mem_comp [Countable α]
+theorem EtaReplacement.not_mem_of_not_mem_comp
     {C D E : Set α} (f : EtaReplacement C D) (g : EtaReplacement D E)
     {x : α} (hxC : x ∈ C) (hxD : x ∉ D) : x ∉ E := by
   intro hxE
@@ -351,7 +360,7 @@ theorem EtaReplacement.not_mem_of_not_mem_comp [Countable α]
       exact contradiction_above Y (hhEta.upperSection hyF) Set.inter_subset_left
         (fun z hz => hxylt.trans hz.2)
 
-theorem EtaReplacement.image_eq_singleton_of_mem_target [Countable α]
+theorem EtaReplacement.image_eq_singleton_of_mem_target
     {C D : Set α} (f : EtaReplacement C D) (x : C) (hxD : x.1 ∈ D) :
     f.image x = {x.1} := by
   rcases f.image_shape x with h | heta
@@ -381,7 +390,7 @@ instance : SetLike (EtaChainObject α) α where
   coe C := C.carrier
   coe_injective C D h := by cases C; cases D; cases h; rfl
 
-instance [Countable α] : PartialOrder (EtaChainObject α) where
+instance : PartialOrder (EtaChainObject α) where
   le C D := EtaReplaces C.carrier D.carrier
   le_refl C := etaReplaces_refl C.etaMaximal
   le_trans _ _ _ := etaReplaces_trans
@@ -390,7 +399,7 @@ instance [Countable α] : PartialOrder (EtaChainObject α) where
     exact etaReplaces_antisymm hCD hDC
 
 /-- A strict replacement removes at least one point of its source chain. -/
-theorem EtaChainObject.exists_mem_not_mem_of_lt [Countable α]
+theorem EtaChainObject.exists_mem_not_mem_of_lt
     {C D : EtaChainObject α} (hCD : C < D) :
     ∃ x : α, x ∈ C.carrier ∧ x ∉ D.carrier := by
   obtain ⟨f⟩ := hCD.le
@@ -402,20 +411,20 @@ theorem EtaChainObject.exists_mem_not_mem_of_lt [Countable α]
   exact hCD.ne (SetLike.coe_injective hcarriers)
 
 /-- Composite of a finite consecutive sequence of replacement witnesses. -/
-def iterEtaReplacement [Countable α] (C : ℕ → EtaChainObject α)
+def iterEtaReplacement (C : ℕ → EtaChainObject α)
     (step : ∀ n, EtaReplacement (C n).carrier (C (n + 1)).carrier) :
     ∀ n k, EtaReplacement (C n).carrier (C (n + k)).carrier
   | n, 0 => EtaReplacement.identity (C n).etaMaximal
   | n, k + 1 => (step (n + k)).comp (iterEtaReplacement C step n k)
 
-theorem iterEtaReplacement_not_mem [Countable α] (C : ℕ → EtaChainObject α)
+theorem iterEtaReplacement_not_mem (C : ℕ → EtaChainObject α)
     (step : ∀ n, EtaReplacement (C n).carrier (C (n + 1)).carrier)
     {n : ℕ} {x : α} (hx : x ∈ C n) (hxNext : x ∉ C (n + 1)) (k : ℕ) :
     x ∉ C ((n + 1) + k) := by
   exact (step n).not_mem_of_not_mem_comp (iterEtaReplacement C step (n + 1) k) hx hxNext
 
 /-- A witness obtained by composing the consecutive replacements between two stages. -/
-noncomputable def etaReplacementBetween [Countable α] (C : ℕ → EtaChainObject α)
+noncomputable def etaReplacementBetween (C : ℕ → EtaChainObject α)
     (step : ∀ n, EtaReplacement (C n).carrier (C (n + 1)).carrier)
     {n m : ℕ} (hnm : n ≤ m) : EtaReplacement (C n).carrier (C m).carrier := by
   let k := m - n
@@ -432,17 +441,17 @@ def EtaState.asPoint {C : ℕ → EtaChainObject α} (a : EtaState C) : (C a.sta
   ⟨a.point, a.mem_carrier⟩
 
 /-- A later, genuinely different point lying in a replacement image of a state. -/
-def EtaDescendant [Countable α] (C : ℕ → EtaChainObject α)
+def EtaDescendant (C : ℕ → EtaChainObject α)
     (a b : EtaState C) : Prop :=
   a.stage < b.stage ∧ ∃ f : EtaReplacement (C a.stage).carrier (C b.stage).carrier,
     b.point ∈ f.image a.asPoint ∧ b.point ≠ a.point
 
-theorem etaDescendant_incomparable [Countable α] {C : ℕ → EtaChainObject α}
+theorem etaDescendant_incomparable {C : ℕ → EtaChainObject α}
     {a b : EtaState C} (h : EtaDescendant C a b) : Incomparable b.point a.point := by
   obtain ⟨_, f, hmem, hne⟩ := h
   exact f.image_incomparable a.asPoint hmem hne
 
-theorem etaDescendant_trans [Countable α] {C : ℕ → EtaChainObject α}
+theorem etaDescendant_trans {C : ℕ → EtaChainObject α}
     {a b c : EtaState C} (hab' : EtaDescendant C a b) (hbc' : EtaDescendant C b c) :
     EtaDescendant C a c := by
   obtain ⟨hab, f, hbf, hbne⟩ := hab'
@@ -462,11 +471,11 @@ theorem etaDescendant_trans [Countable α] {C : ℕ → EtaChainObject α}
     exact haNotC (hca ▸ c.mem_carrier)
   exact ⟨hab.trans hbc, g.comp f, hcComp, hane⟩
 
-private def etaDescRel [Countable α] (C : ℕ → EtaChainObject α) :
+private def etaDescRel (C : ℕ → EtaChainObject α) :
     EtaState C → EtaState C → Prop := fun child parent => EtaDescendant C parent child
 
 /-- FAC rules out an infinite branch in the replacement forest. -/
-theorem etaDescRel_wellFounded [Countable α] (hfac : IsFAC α)
+theorem etaDescRel_wellFounded (hfac : IsFAC α)
     (C : ℕ → EtaChainObject α) : WellFounded (etaDescRel C) := by
   rw [wellFounded_iff_isEmpty_descending_chain]
   refine ⟨fun chain => ?_⟩
@@ -507,7 +516,7 @@ def EtaState.Stable {C : ℕ → EtaChainObject α} (a : EtaState C) : Prop :=
   ∀ m, a.stage ≤ m → a.point ∈ C m
 
 /-- A stable point reached from a state by a (possibly identity) replacement. -/
-structure EtaTerminalDesc [Countable α] (C : ℕ → EtaChainObject α)
+structure EtaTerminalDesc (C : ℕ → EtaChainObject α)
     (a : EtaState C) where
   state : EtaState C
   stage_le : a.stage ≤ state.stage
@@ -516,7 +525,7 @@ structure EtaTerminalDesc [Countable α] (C : ℕ → EtaChainObject α)
   stable : state.Stable
 
 /-- Every vertex of the replacement forest has a terminal descendant. -/
-theorem exists_etaTerminalDesc [Countable α] (hfac : IsFAC α)
+theorem exists_etaTerminalDesc (hfac : IsFAC α)
     (C : ℕ → EtaChainObject α)
     (step : ∀ n, EtaReplacement (C n).carrier (C (n + 1)).carrier)
     (a : EtaState C) : Nonempty (EtaTerminalDesc C a) := by
@@ -561,7 +570,7 @@ theorem exists_etaTerminalDesc [Countable α] (hfac : IsFAC α)
         stable := d.stable }
     ⟩
 
-theorem EtaTerminalDesc.mem_image_at [Countable α] {C : ℕ → EtaChainObject α}
+theorem EtaTerminalDesc.mem_image_at {C : ℕ → EtaChainObject α}
     (step : ∀ n, EtaReplacement (C n).carrier (C (n + 1)).carrier)
     {a : EtaState C} (d : EtaTerminalDesc C a) {m : ℕ} (hm : d.state.stage ≤ m) :
     ∃ f : EtaReplacement (C a.stage).carrier (C m).carrier,
@@ -580,7 +589,7 @@ theorem EtaTerminalDesc.mem_image_at [Countable α] {C : ℕ → EtaChainObject 
     (show d.replacement.image a.asPoint from ⟨d.state.point, d.mem_image⟩)
     (by simpa only [htarget] using hgmem)
 
-def EtaTerminalDesc.prepend [Countable α] {C : ℕ → EtaChainObject α}
+def EtaTerminalDesc.prepend {C : ℕ → EtaChainObject α}
     {a b : EtaState C} (hab : a.stage ≤ b.stage)
     (f : EtaReplacement (C a.stage).carrier (C b.stage).carrier)
     (hb : b.point ∈ f.image a.asPoint) (d : EtaTerminalDesc C b) :
@@ -597,7 +606,7 @@ def EtaTerminalDesc.prepend [Countable α] {C : ℕ → EtaChainObject α}
       mem_image := hmemComp
       stable := d.stable }
 
-theorem etaTerminalDesc_strictLT [Countable α] {C : ℕ → EtaChainObject α}
+theorem etaTerminalDesc_strictLT {C : ℕ → EtaChainObject α}
     (step : ∀ n, EtaReplacement (C n).carrier (C (n + 1)).carrier)
     {a b : EtaState C} (habStage : a.stage = b.stage) (hab : a.point < b.point)
     (da : EtaTerminalDesc C a) (db : EtaTerminalDesc C b) :
@@ -619,7 +628,7 @@ theorem etaTerminalDesc_strictLT [Countable α] {C : ℕ → EtaChainObject α}
 def etaStableLimit (C : ℕ → EtaChainObject α) : Set α :=
   {x | ∃ n, ∀ m, n ≤ m → x ∈ C m}
 
-theorem EtaTerminalDesc.mem_stableLimit [Countable α] {C : ℕ → EtaChainObject α}
+theorem EtaTerminalDesc.mem_stableLimit {C : ℕ → EtaChainObject α}
     {a : EtaState C} (d : EtaTerminalDesc C a) : d.state.point ∈ etaStableLimit C :=
   ⟨d.state.stage, d.stable⟩
 
@@ -800,17 +809,17 @@ def IsEtaStronglyMaximal (C : Set α) : Prop :=
   IsEtaMaximalChain C ∧
     ∀ (D : Set α) (f : EtaReplacement C D), f.Trivial
 
-/-- Every nonempty chain in the eta-replacement order has an upper bound.  Strict replacements
-permanently remove an ambient point, so the countability of `α` supplies a countable cofinal
-subchain.  Its running maxima form a replacement sequence, whose upper bound is constructed from
-terminal descendants above. -/
-theorem etaReplacement_chain_upperBound [Countable α] (hfac : IsFAC α)
+/-- Paper `lem:etalt-chain-countable-cofinal`. Strict replacements permanently remove an
+ambient point, so countability supplies a cofinal sequence if there is no greatest chain. -/
+theorem etaReplacement_chain_countable_cofinal [Countable α]
     (s : Set (EtaChainObject α)) (hs : IsChain (· ≤ ·) s) (hne : s.Nonempty) :
-    ∃ upper : EtaChainObject α, ∀ C ∈ s, C ≤ upper := by
+    (∃ U ∈ s, ∀ C ∈ s, C ≤ U) ∨
+      ∃ R : ℕ → EtaChainObject α, Monotone R ∧ (∀ n, R n ∈ s) ∧
+        ∀ C ∈ s, ∃ n, C ≤ R n := by
   classical
   by_cases htop : ∃ U ∈ s, ∀ C ∈ s, C ≤ U
-  · obtain ⟨U, hUs, hU⟩ := htop
-    exact ⟨U, hU⟩
+  · exact Or.inl htop
+  right
   have habove (C : EtaChainObject α) (hCs : C ∈ s) :
       ∃ D ∈ s, C < D := by
     by_contra hnone
@@ -853,15 +862,26 @@ theorem etaReplacement_chain_upperBound [Countable α] (hfac : IsFAC α)
   have hRmem (n : ℕ) : R n ∈ s := runningMax_mem hs hfmem n
   have hRmono : Monotone R := monotone_nat_of_le_succ fun n =>
     runningMax_le_succ hs hfmem n
-  have hstep (n : ℕ) : EtaReplacement (R n).carrier (R (n + 1)).carrier :=
-    Classical.choice (hRmono (Nat.le_succ n))
-  obtain ⟨upper, hupper⟩ := etaReplacement_sequence_upperBound hfac R hstep
-  refine ⟨upper, fun C hCs => ?_⟩
+  refine ⟨R, hRmono, hRmem, fun C hCs => ?_⟩
   obtain ⟨i, hCi⟩ := hcofinal C hCs
   obtain ⟨n, hn⟩ := henum i
   have henumLe : B i ≤ R n := by
     simpa [R, f, hn] using runningMax_self_le hs hfmem n
-  exact hCi.trans (henumLe.trans (hupper n))
+  exact ⟨n, hCi.trans henumLe⟩
+
+/-- Every nonempty eta-replacement chain has an upper bound, by taking the limit of its
+cofinal sequence when it has no greatest member. -/
+theorem etaReplacement_chain_upperBound [Countable α] (hfac : IsFAC α)
+    (s : Set (EtaChainObject α)) (hs : IsChain (· ≤ ·) s) (hne : s.Nonempty) :
+    ∃ upper : EtaChainObject α, ∀ C ∈ s, C ≤ upper := by
+  rcases etaReplacement_chain_countable_cofinal s hs hne with ⟨U, _, hU⟩ | ⟨R, hR, _, hcofinal⟩
+  · exact ⟨U, hU⟩
+  have hstep (n : ℕ) : EtaReplacement (R n).carrier (R (n + 1)).carrier :=
+    Classical.choice (hR (Nat.le_succ n))
+  obtain ⟨upper, hupper⟩ := etaReplacement_sequence_upperBound hfac R hstep
+  refine ⟨upper, fun C hC => ?_⟩
+  obtain ⟨n, hn⟩ := hcofinal C hC
+  exact hn.trans (hupper n)
 
 theorem exists_etaStronglyMaximal [Countable α] (hfac : IsFAC α)
     (hns : ¬ IsScattered α) : ∃ C : Set α, IsEtaStronglyMaximal C := by
@@ -890,5 +910,13 @@ theorem exists_etaStronglyMaximal [Countable α] (hfac : IsFAC α)
   have hcarriers : C.carrier = D := congrArg EtaChainObject.carrier hEq
   subst D
   exact f.self_trivial
+
+/-- Paper `prop:esmc-exists`. -/
+theorem scattered_or_exists_etaStronglyMaximal [Countable α] (hfac : IsFAC α) :
+    IsScattered α ∨ ∃ C : Set α, IsEtaStronglyMaximal C := by
+  classical
+  by_cases h : IsScattered α
+  · exact Or.inl h
+  · exact Or.inr (exists_etaStronglyMaximal hfac h)
 
 end AharoniKorman

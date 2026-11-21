@@ -1,7 +1,6 @@
 import AharoniKorman.Completion.TraceTransfer
 
-/-! Transitivity by finite-trace transfer and normalization of two starting points.
-The finite-distance class quotient is not needed for this argument. -/
+/-! Transitivity by aligned tails, canonical class maps and endpoint normalization. -/
 
 namespace AharoniKorman.Completion
 
@@ -46,39 +45,51 @@ theorem finite_trace_of_subset {C D : SaturatedChain α} (hCD : (C : Set α) ⊆
     (incomparabilityTrace C x).Finite :=
   finite_trace_of_trace_subset hD (fun c _ => hCD c.2)
 
-/-- Equal or incomparable points cannot lie below a strict lower bound. -/
-private theorem contact_mem_final {D : SaturatedChain α} {S : Set α}
-    (hS : IsFinalSegment S D) {d0 x y : α} (hd0 : d0 ∈ S)
-    (hdx : d0 < x) (hy : y ∈ D) (hxy : x = y ∨ Incomparable x y) : y ∈ S := by
-  have hdy : d0 ≤ y := by
-    rcases D.isChain.total (hS.1 hd0) hy with hdy | hyd
-    · exact hdy
-    · exact False.elim (hxy.elim
-        (fun heq => hdx.not_ge (heq ▸ hyd))
-        (fun hinc => hinc.not_ge (hyd.trans hdx.le)))
-  exact hS.2 hd0 hy hdy
+private theorem tail_crossRelated {C D : SaturatedChain α}
+    (h : MutuallyFiniteIncomparability C D) {c : C} {d : D} (hcd : CrossRelated c d)
+    (x : C.tail c) : ∃ y : D.tail d, CrossRelated x y := by
+  let d' : D.tail d := ⟨d.1, d.2, le_rfl⟩
+  by_cases hxd : CrossRelated x d'
+  · exact ⟨d', hxd⟩
+  have hdx : d.1 ≤ x.1 := by
+    rcases not_incompRel_iff_symmGen.mp (fun hi => hxd (Or.inr hi)) with hle | hge
+    · rcases hcd with he | hinc
+      · have hge : d.1 ≤ x.1 := he ▸ x.2.2
+        exact False.elim (hxd (Or.inl (le_antisymm hle hge)))
+      · exact False.elim (hinc.not_le (x.2.2.trans hle))
+    · exact hge
+  obtain ⟨y, hxy⟩ := h.exists_crossRelated_right ⟨x.1, x.2.1⟩
+  have hdy : d ≤ y := by
+    apply le_of_not_gt
+    intro hyd
+    have hyx : y.1 < x.1 := (show y.1 < d.1 from hyd).trans_le hdx
+    exact hxy.elim (fun he => hyx.ne he.symm) (fun hi => hi.not_ge hyx.le)
+  exact ⟨⟨y.1, y.2, hdy⟩, hxy⟩
 
-/-- Pointwise bridge across two final segments of the same middle chain. -/
-private theorem bridge_point {C D1 D2 E D : SaturatedChain α}
-    (hCD : MutuallyFiniteIncomparability C D1)
-    (hDE : MutuallyFiniteIncomparability D2 E)
-    (hD1 : IsFinalSegment (D1 : Set α) D)
-    (hD2 : IsFinalSegment (D2 : Set α) D)
-    {d0 : α} (hd1 : d0 ∈ D1) (hd2 : d0 ∈ D2)
-    (hnD1 : D1.NoTop) (hnE : E.NoTop) (x : C) (hdx : d0 < x.1) :
-    (incomparabilityTrace E x.1).Finite ∧ ∃ e : E, x.1 < e.1 := by
-  have htrace : (incomparabilityTrace D2 x.1).Finite :=
-    finite_trace_of_trace_subset (hCD.right_finite x) (by
-      intro d hd
-      exact contact_mem_final hD1 hd1 hdx (hD2.1 d.2) (Or.inr hd.symm))
-  have hcontact : ∃ d : D2, x.1 = d.1 ∨ Incomparable x.1 d.1 := by
-    obtain ⟨d, hd⟩ := hCD.exists_crossRelated_right x
-    exact ⟨⟨d.1, contact_mem_final hD2 hd2 hdx (hD1.1 d.2) hd⟩, hd⟩
-  refine ⟨hDE.transfer_finite_trace htrace hcontact, ?_⟩
-  obtain ⟨d, hxd⟩ := hCD.exists_right_gt hnD1 x
-  have hdD2 : d.1 ∈ D2 := hD2.2 hd2 (hD1.1 d.2) (hdx.trans hxd).le
-  obtain ⟨e, hde⟩ := hDE.exists_right_gt hnE ⟨d.1, hdD2⟩
-  exact ⟨e, hxd.trans hde⟩
+private theorem mfi_aligned_tails {C D : SaturatedChain α}
+    (h : MutuallyFiniteIncomparability C D) {c : C} {d : D} (hcd : CrossRelated c d) :
+    MutuallyFiniteIncomparability (C.tail c) (D.tail d) := by
+  apply MutuallyFiniteIncomparability.of_finite_crossRelated
+  · intro y
+    exact finite_trace_of_subset (C.tail_final c).1 (h.left_finite ⟨y.1, y.2.1⟩)
+  · intro x
+    exact finite_trace_of_subset (D.tail_final d).1 (h.right_finite ⟨x.1, x.2.1⟩)
+  · intro y
+    obtain ⟨x, hxy⟩ := tail_crossRelated h.symm hcd.symm y
+    exact ⟨x, hxy.symm⟩
+  · exact tail_crossRelated h hcd
+
+private theorem aligned_finite_trace {A M B : SaturatedChain α}
+    (hAM : MutuallyFiniteIncomparability A M) (hMB : MutuallyFiniteIncomparability M B)
+    (x : A) : (incomparabilityTrace B x.1).Finite ∧
+      ∀ b : B, b ∈ incomparabilityTrace B x.1 →
+        FiniteDistanceClass.mk b = (hMB.classOrderIso ∘ hAM.classOrderIso) (FiniteDistanceClass.mk x) := by
+  obtain ⟨m, hxm⟩ := hAM.exists_crossRelated_right x
+  obtain ⟨hfin, hclass⟩ := hMB.transfer_finite_trace_class (hAM.right_finite x) hxm
+  refine ⟨hfin.subset (fun _ hi => Or.inr hi.symm), ?_⟩
+  intro b hb
+  exact (hclass b (Or.inr hb.symm)).trans (congrArg hMB.classOrderIso
+    (hAM.classOrderIso_mk_of_crossRelated hxm).symm)
 
 private theorem cofinal_tail_right {C D : SaturatedChain α}
     (h : ∀ c : C, ∃ d : D, c.1 < d.1) (b : D) :
@@ -152,43 +163,53 @@ theorem normalize_finite_cofinal {C D : SaturatedChain α}
   · intro x
     exact finite_trace_of_subset (D.tail_final b).1 (hright ⟨x.1, x.2.1⟩)
 
-/-- Transitivity of the direct manuscript relation. No equivalence closure or
-extra mathematical assumption is introduced. -/
+/-- Paper `lem:equivalence`: align the two middle tails, transfer finite traces
+through the composed canonical isomorphism, and normalize the outer endpoints. -/
 theorem IncreasingEquivalent.trans {C D E : IncreasingChain α}
     (hCD : IncreasingEquivalent C D) (hDE : IncreasingEquivalent D E) :
     IncreasingEquivalent C E := by
-  obtain ⟨C', D1, hC', hD1, hCD⟩ := hCD
-  obtain ⟨D2, E', hD2, hE', hDE⟩ := hDE
-  have hnC := C.finalSegment_noTop C' hC'
-  have hnD1 := D.finalSegment_noTop D1 hD1
-  have hnD2 := D.finalSegment_noTop D2 hD2
-  have hnE := E.finalSegment_noTop E' hE'
-  have hcommon : ((D1 : Set α) ∩ D2).Nonempty := by
-    rcases finalSegments_comparable hD1 hD2 with h12 | h21
-    · obtain ⟨d, hd⟩ := D1.nonempty
+  obtain ⟨C', D₁, hC', hD₁, hCD⟩ := hCD
+  obtain ⟨D₂, E', hD₂, hE', hDE⟩ := hDE
+  have hcommon : ((D₁ : Set α) ∩ D₂).Nonempty := by
+    rcases finalSegments_comparable hD₁ hD₂ with h12 | h21
+    · obtain ⟨d, hd⟩ := D₁.nonempty
       exact ⟨d, hd, h12 hd⟩
-    · obtain ⟨d, hd⟩ := D2.nonempty
+    · obtain ⟨d, hd⟩ := D₂.nonempty
       exact ⟨d, h21 hd, hd⟩
-  obtain ⟨d0, hd1, hd2⟩ := hcommon
-  obtain ⟨c0, hdc⟩ := hCD.exists_left_gt hnC ⟨d0, hd1⟩
-  obtain ⟨e0, hde⟩ := hDE.exists_right_gt hnE ⟨d0, hd2⟩
-  let A := C'.tail c0
-  let B := E'.tail e0
-  have hforward (x : A) : (incomparabilityTrace E' x.1).Finite ∧
-      ∃ e : E', x.1 < e.1 :=
-    bridge_point hCD hDE hD1 hD2 hd1 hd2 hnD1 hnE ⟨x.1, x.2.1⟩
-      (hdc.trans_le x.2.2)
-  have hbackward (y : B) : (incomparabilityTrace C' y.1).Finite ∧
-      ∃ c : C', y.1 < c.1 :=
-    bridge_point hDE.symm hCD.symm hD2 hD1 hd2 hd1 hnD2 hnC ⟨y.1, y.2.1⟩
-      (hde.trans_le y.2.2)
-  obtain ⟨A', B', hA', hB', hAB⟩ := normalize_finite_cofinal
-    (cofinal_tail_right (fun x => (hforward x).2) e0)
-    (cofinal_tail_right (fun y => (hbackward y).2) c0)
-    (fun y => finite_trace_of_subset (C'.tail_final c0).1 (hbackward y).1)
-    (fun x => finite_trace_of_subset (E'.tail_final e0).1 (hforward x).1)
-  exact ⟨A', B', isFinalSegment_trans hA' (isFinalSegment_trans (C'.tail_final c0) hC'),
-    isFinalSegment_trans hB' (isFinalSegment_trans (E'.tail_final e0) hE'), hAB⟩
+  obtain ⟨d, hd₁, hd₂⟩ := hcommon
+  obtain ⟨c, hcd⟩ := hCD.exists_crossRelated_left ⟨d, hd₁⟩
+  obtain ⟨e, hde⟩ := hDE.exists_crossRelated_right ⟨d, hd₂⟩
+  let d₁ : D₁ := ⟨d, hd₁⟩
+  let d₂ : D₂ := ⟨d, hd₂⟩
+  let A := C'.tail c
+  let M := D₁.tail d₁
+  let B := E'.tail e
+  have heq : M = D₂.tail d₂ := by
+    apply SetLike.ext
+    intro x
+    change (x ∈ D₁ ∧ d ≤ x) ↔ (x ∈ D₂ ∧ d ≤ x)
+    exact ⟨fun hx => ⟨hD₂.2 hd₂ (hD₁.1 hx.1) hx.2, hx.2⟩,
+      fun hx => ⟨hD₁.2 hd₁ (hD₂.1 hx.1) hx.2, hx.2⟩⟩
+  have hAM : MutuallyFiniteIncomparability A M := mfi_aligned_tails hCD hcd
+  have hMB : MutuallyFiniteIncomparability M B := by
+    rw [heq]
+    exact mfi_aligned_tails hDE hde
+  have hnA : A.NoTop := C'.tail_noTop c (C.finalSegment_noTop C' hC')
+  have hnM : M.NoTop := D₁.tail_noTop d₁ (D.finalSegment_noTop D₁ hD₁)
+  have hnB : B.NoTop := E'.tail_noTop e (E.finalSegment_noTop E' hE')
+  have hAB (x : A) : ∃ y : B, x.1 < y.1 := by
+    obtain ⟨m, hxm⟩ := hAM.exists_right_gt hnM x
+    obtain ⟨y, hmy⟩ := hMB.exists_right_gt hnB m
+    exact ⟨y, hxm.trans hmy⟩
+  have hBA (y : B) : ∃ x : A, y.1 < x.1 := by
+    obtain ⟨m, hym⟩ := hMB.exists_left_gt hnM y
+    obtain ⟨x, hmx⟩ := hAM.exists_left_gt hnA m
+    exact ⟨x, hym.trans hmx⟩
+  obtain ⟨A', B', hA', hB', hmfi⟩ := normalize_finite_cofinal hAB hBA
+    (fun y => (aligned_finite_trace hMB.symm hAM.symm y).1)
+    (fun x => (aligned_finite_trace hAM hMB x).1)
+  exact ⟨A', B', isFinalSegment_trans hA' (isFinalSegment_trans (C'.tail_final c) hC'),
+    isFinalSegment_trans hB' (isFinalSegment_trans (E'.tail_final e) hE'), hmfi⟩
 
 theorem DecreasingEquivalent.trans {C D E : DecreasingChain α}
     (hCD : DecreasingEquivalent C D) (hDE : DecreasingEquivalent D E) :
